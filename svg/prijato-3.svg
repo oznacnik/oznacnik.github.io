@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 794 1123" width="794" height="1123">
+  <rect width="794" height="1123" fill="#FFFFFF"/>
+  <rect y="0" width="794" height="8" fill="#E3000B"/>
+
+  <text x="36" y="44" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="9" font-weight="700" fill="#888888" letter-spacing="2.4" text-decoration="none" text-anchor="start">JAK TO FUNGUJE</text>
+  <text x="34" y="100" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="44" font-weight="700" fill="#000000" letter-spacing="-1.6" text-decoration="none" text-anchor="start">VERNISÁŽ / FILM</text>
+  <text x="34" y="144" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="44" font-weight="700" fill="#E3000B" letter-spacing="-1.6" text-decoration="none" text-anchor="start">CO POTŘEBUJEME.</text>
+
+  <line x1="0" y1="174" x2="794" y2="174" stroke="#000000" stroke-width="3"/>
+  <text x="36" y="226" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="40" font-weight="700" fill="#000000" letter-spacing="-2" text-decoration="none" text-anchor="start">KOPIE / POČET</text>
+  <text x="36" y="244.8" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#000000" letter-spacing="2.4" text-decoration="none" text-anchor="start">ČÍM VÍC, TÍM LÍP.</text>
+  <text x="36" y="279.8" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Jeden motiv můžeš vytisknout ve více kopiích a rozmístit ho na víc</text>
+  <text x="36" y="298.8" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">označníků nebo víc zastávek po městě. Kopie jsou v pořádku.</text>
+  <text x="36" y="317.8" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Je jedno, kolik chceš vystavit děl. Čím víc, tím líp.</text>
+
+  <line x1="0" y1="339.8" x2="794" y2="339.8" stroke="#000000" stroke-width="3"/>
+  <text x="36" y="399.8" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="48" font-weight="700" fill="#E3000B" letter-spacing="-2" text-decoration="none" text-anchor="start">VERNISÁŽ</text>
+  <text x="36" y="417.96000000000004" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#000000" letter-spacing="2.4" text-decoration="none" text-anchor="start">PROCHÁZKA, INSTALACE, JÍDLO, PITÍ.</text>
+  <text x="36" y="452.96000000000004" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Vernisáž koncipujeme jako procházku městem. Sejdeme se,</text>
+  <text x="36" y="471.96000000000004" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">projdeme trasu, každý si obsadí svou zastávku. Cestou jídlo a pití.</text>
+  <text x="36" y="490.96000000000004" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Pomoc s instalací k dispozici, pokud o ni v formuláři požádáš.</text>
+
+  <line x1="0" y1="512.96" x2="794" y2="512.96" stroke="#000000" stroke-width="3"/>
+  <text x="36" y="564.96" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="40" font-weight="700" fill="#000000" letter-spacing="-2" text-decoration="none" text-anchor="start">FILM</text>
+  <text x="36" y="583.76" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#000000" letter-spacing="2.4" text-decoration="none" text-anchor="start">TOČÍME DOKUMENT.</text>
+  <text x="36" y="618.76" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Zároveň s vernisáží natáčíme dokumentární film o vzniku výstavy.</text>
+  <text x="36" y="637.76" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Záběry tvojí instalace a tvoje účasti se mohou objevit ve filmu.</text>
+  <text x="36" y="656.76" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">V formuláři odsouhlasíš, jestli chceš být zachycen, nebo ne.</text>
+
+  <line x1="0" y1="678.76" x2="794" y2="678.76" stroke="#000000" stroke-width="3"/>
+  <text x="36" y="730.76" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="40" font-weight="700" fill="#000000" letter-spacing="-2" text-decoration="none" text-anchor="start">CO POTŘEBUJEME</text>
+  <text x="36" y="749.56" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#000000" letter-spacing="2.4" text-decoration="none" text-anchor="start">POKUD CHCEŠ NA WEB NEBO CEDULKU.</text>
+  <text x="36" y="784.56" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Pokud chceš být na webu galerie a/nebo mít u díla cedulku,</text>
+  <text x="36" y="803.56" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">pošli nám: u každého díla název, rok, technika.</text>
+  <text x="36" y="822.56" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">K tomu krátkou anotaci autora (2 / 3 věty o tobě).</text>
+  <text x="36" y="841.56" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Pošli e-mailem před vernisáží.</text>
+<line x1="0" y1="863.56" x2="794" y2="863.56" stroke="#000000" stroke-width="3"/>
+
+  <rect y="1031" width="794" height="60" fill="#000000"/>
+  <text x="36" y="1053" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#FFFFFF" letter-spacing="2.4" text-decoration="none" text-anchor="start">PŘEDPOKLÁDANÝ TERMÍN VERNISÁŽE</text>
+  <text x="36" y="1081" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#E3000B" letter-spacing="-0.6" text-decoration="none" text-anchor="start">Víkend 23. a 24. 5. 2026</text>
+  <text x="758" y="1079" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="10" font-weight="400" fill="#aaaaaa" letter-spacing="1.2" text-decoration="none" text-anchor="end">potvrdíme dle preferencí z formuláře</text>
+
+  <rect y="1095" width="794" height="6" fill="#000000"/>
+  <text x="36" y="1096" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="8" font-weight="400" fill="#888888" letter-spacing="1.6" text-decoration="none" text-anchor="start">Strana 3 / 4 / Vernisáž / Film / Co potřebujeme</text>
+  <text x="758" y="1096" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="8" font-weight="400" fill="#888888" letter-spacing="1.6" text-decoration="none" text-anchor="end">Ptáček / 2026</text>
+  <rect y="1115" width="794" height="8" fill="#E3000B"/>
+</svg>

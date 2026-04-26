@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 820" width="200" height="820">
+  <defs>
+    <style>
+      text { font-family: 'Arial', 'Helvetica Neue', Helvetica, sans-serif; }
+    </style>
+  </defs>
+
+  <!-- ====== POLE (sloupek) ====== -->
+  <!-- The pole is thin, runs behind everything -->
+  <rect x="80" y="0" width="40" height="780" fill="#E3000B"/>
+
+  <!-- Pole base / foot - wider -->
+  <rect x="60" y="760" width="80" height="60" rx="3" fill="#E3000B"/>
+
+  <!-- ====== TOP SIGN: Bus pictogram ====== -->
+  <!-- Red outer frame -->
+  <rect x="18" y="12" width="164" height="164" rx="5" fill="#E3000B"/>
+  <!-- White inner border -->
+  <rect x="24" y="18" width="152" height="152" rx="3" fill="#FFFFFF"/>
+  <!-- Blue square -->
+  <rect x="32" y="26" width="136" height="136" rx="2" fill="#0071CE"/>
+  <!-- White square inside blue -->
+  <rect x="44" y="38" width="112" height="112" rx="1" fill="#FFFFFF"/>
+
+  <!-- Bus icon (front view) -->
+  <g transform="translate(100, 94)">
+    <!-- Bus body -->
+    <rect x="-34" y="-30" width="68" height="52" rx="5" fill="#1A1A1A"/>
+    <!-- Windows row -->
+    <rect x="-28" y="-24" width="24" height="20" rx="2" fill="#555"/>
+    <rect x="4" y="-24" width="24" height="20" rx="2" fill="#555"/>
+    <!-- Lower body details -->
+    <rect x="-28" y="0" width="12" height="6" rx="1" fill="#444"/>
+    <rect x="16" y="0" width="12" height="6" rx="1" fill="#444"/>
+    <!-- Bumper -->
+    <rect x="-32" y="20" width="64" height="6" rx="2" fill="#1A1A1A"/>
+    <!-- Wheels -->
+    <circle cx="-22" cy="28" r="5.5" fill="#1A1A1A"/>
+    <circle cx="-22" cy="28" r="2.5" fill="#777"/>
+    <circle cx="22" cy="28" r="5.5" fill="#1A1A1A"/>
+    <circle cx="22" cy="28" r="2.5" fill="#777"/>
+    <!-- Headlights -->
+    <rect x="-31" y="8" width="6" height="4" rx="1.5" fill="#FFD600"/>
+    <rect x="25" y="8" width="6" height="4" rx="1.5" fill="#FFD600"/>
+  </g>
+
+  <!-- Mounting brackets top pair -->
+  <rect x="74" y="172" width="10" height="18" rx="1" fill="#333"/>
+  <rect x="116" y="172" width="10" height="18" rx="1" fill="#333"/>
+
+  <!-- ====== INFO PANEL ====== -->
+  <!-- Red outer frame -->
+  <rect x="18" y="192" width="164" height="168" rx="4" fill="#E3000B"/>
+  <!-- Dark red inner border frame -->
+  <rect x="22" y="196" width="156" height="160" rx="3" fill="#C20009"/>
+  <!-- White info area -->
+  <rect x="26" y="200" width="148" height="152" rx="2" fill="#FFFFFF"/>
+
+  <!-- Stop name -->
+  <text x="100" y="224" text-anchor="middle" font-size="15" font-weight="700" fill="#1A1A1A">DOLNÍ POČERNICE</text>
+
+  <!-- Thin divider -->
+  <line x1="30" y1="230" x2="170" y2="230" stroke="#DDD" stroke-width="0.5"/>
+
+  <!-- Line 163 box -->
+  <rect x="32" y="236" width="52" height="28" rx="1" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="1.5"/>
+  <text x="58" y="256" text-anchor="middle" font-size="20" font-weight="900" fill="#1A1A1A">163</text>
+
+  <!-- Direction -->
+  <text x="90" y="246" font-size="6.5" font-weight="400" fill="#666">směr:</text>
+  <text x="90" y="257" font-size="8" font-weight="600" fill="#1A1A1A">Deštíkovská</text>
+
+  <!-- VÝSTUPNÍ bar -->
+  <rect x="32" y="270" width="138" height="24" rx="1" fill="#E3000B"/>
+  <text x="101" y="287" text-anchor="middle" font-size="15" font-weight="700" fill="#FFFFFF" letter-spacing="1.5">VÝSTUPNÍ</text>
+
+  <!-- Line boxes row: 110, 208 -->
+  <rect x="32" y="300" width="52" height="28" rx="1" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="1.5"/>
+  <text x="58" y="320" text-anchor="middle" font-size="18" font-weight="900" fill="#1A1A1A">110</text>
+
+  <rect x="90" y="300" width="52" height="28" rx="1" fill="#FFFFFF" stroke="#1A1A1A" stroke-width="1.5"/>
+  <text x="116" y="320" text-anchor="middle" font-size="18" font-weight="900" fill="#1A1A1A">208</text>
+
+  <!-- PID small label -->
+  <text x="168" y="326" text-anchor="end" font-size="4" font-weight="400" fill="#AAA">Pražská int. doprava</text>
+
+  <!-- Mounting brackets between info and red panel -->
+  <rect x="74" y="358" width="10" height="16" rx="1" fill="#333"/>
+  <rect x="116" y="358" width="10" height="16" rx="1" fill="#333"/>
+
+  <!-- ====== RED MIDDLE PANEL ====== -->
+  <!-- This panel sits on the pole, narrower red area -->
+  <rect x="34" y="378" width="132" height="120" rx="3" fill="#E3000B"/>
+  <!-- Inner darker red border -->
+  <rect x="38" y="382" width="124" height="112" rx="2" fill="#CC0009"/>
+  <!-- Slightly darker inner area -->
+  <rect x="42" y="386" width="116" height="104" rx="2" fill="#B70008"/>
+
+  <!-- ====== TIMETABLE PANEL ====== -->
+  <!-- Black outer frame -->
+  <rect x="26" y="510" width="148" height="190" rx="3" fill="#1A1A1A"/>
+  <!-- White inner border -->
+  <rect x="30" y="514" width="140" height="182" rx="2" fill="#FFFFFF"/>
+  <!-- Red background inside -->
+  <rect x="34" y="518" width="132" height="174" rx="1" fill="#E3000B"/>
+
+  <!-- White timetable sheets (top half) -->
+  <rect x="40" y="524" width="58" height="78" rx="1" fill="#FFFFFF"/>
+  <rect x="102" y="524" width="58" height="78" rx="1" fill="#FFFFFF"/>
+
+  <!-- Timetable grid — left sheet -->
+  <text x="44" y="533" font-size="3.5" font-weight="700" fill="#333">DOLNÍ POČERNICE</text>
+  <line x1="40" y1="536" x2="98" y2="536" stroke="#DDD" stroke-width="0.3"/>
+  <text x="44" y="542" font-size="3" font-weight="400" fill="#555">5:  12  32  48</text>
+  <text x="44" y="548" font-size="3" font-weight="400" fill="#555">6:  02  18  34  50</text>
+  <text x="44" y="554" font-size="3" font-weight="400" fill="#555">7:  06  18  30  42</text>
+  <text x="44" y="560" font-size="3" font-weight="400" fill="#555">8:  00  15  30  45</text>
+  <text x="44" y="566" font-size="3" font-weight="400" fill="#555">9:  00  20  40</text>
+  <text x="44" y="572" font-size="3" font-weight="400" fill="#555">10: 00  30</text>
+  <text x="44" y="578" font-size="3" font-weight="400" fill="#555">11: 00  30</text>
+  <text x="44" y="584" font-size="3" font-weight="400" fill="#555">12: 00  30</text>
+  <text x="44" y="590" font-size="3" font-weight="400" fill="#555">13: 00  30</text>
+  <text x="44" y="596" font-size="3" font-weight="400" fill="#555">14: 00  20  40</text>
+
+  <!-- Timetable grid — right sheet -->
+  <text x="106" y="533" font-size="3.5" font-weight="700" fill="#333">So + Ne + Svátky</text>
+  <line x1="102" y1="536" x2="160" y2="536" stroke="#DDD" stroke-width="0.3"/>
+  <text x="106" y="542" font-size="3" font-weight="400" fill="#555">6:  15  45</text>
+  <text x="106" y="548" font-size="3" font-weight="400" fill="#555">7:  15  45</text>
+  <text x="106" y="554" font-size="3" font-weight="400" fill="#555">8:  15  45</text>
+  <text x="106" y="560" font-size="3" font-weight="400" fill="#555">9:  15  45</text>
+  <text x="106" y="566" font-size="3" font-weight="400" fill="#555">10: 15  45</text>
+  <text x="106" y="572" font-size="3" font-weight="400" fill="#555">11: 15  45</text>
+  <text x="106" y="578" font-size="3" font-weight="400" fill="#555">12: 15  45</text>
+  <text x="106" y="584" font-size="3" font-weight="400" fill="#555">13: 15  45</text>
+  <text x="106" y="590" font-size="3" font-weight="400" fill="#555">14: 15  45</text>
+  <text x="106" y="596" font-size="3" font-weight="400" fill="#555">15: 15  45</text>
+
+  <!-- Bottom red panels (empty poster area) -->
+  <rect x="40" y="606" width="58" height="78" rx="1" fill="#CC0009"/>
+  <rect x="102" y="606" width="58" height="78" rx="1" fill="#CC0009"/>
+
+</svg>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 794 1123" width="794" height="1123">
+  <rect width="794" height="1123" fill="#FFFFFF"/>
+  <rect y="0" width="794" height="8" fill="#E3000B"/>
+
+  <text x="36" y="86" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="9" font-weight="400" fill="#888888" letter-spacing="2.4" text-decoration="none" text-anchor="start">TVŮJ DALŠÍ KROK</text>
+  <text x="32" y="168" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="84" font-weight="700" fill="#000000" letter-spacing="-3" text-decoration="none" text-anchor="start">VYPLŇ</text>
+  <text x="32" y="246" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="84" font-weight="700" fill="#E3000B" letter-spacing="-3" text-decoration="none" text-anchor="start">FORMULÁŘ.</text>
+<rect y="278" width="794" height="6" fill="#000000"/>
+
+  <rect y="284" width="794" height="80" fill="#000000"/>
+  <text x="36" y="316" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="20" font-weight="700" fill="#FFFFFF" letter-spacing="-0.4" text-decoration="none" text-anchor="start">Bez vyplněného formuláře</text>
+  <text x="36" y="344" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="20" font-weight="700" fill="#E3000B" letter-spacing="-0.4" text-decoration="none" text-anchor="start">tě nezařadíme do plánu instalace.</text>
+<rect y="364" width="794" height="6" fill="#000000"/>
+
+  <text x="36" y="398" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="9" font-weight="700" fill="#888888" letter-spacing="2.4" text-decoration="none" text-anchor="start">FORMULÁŘ</text>
+  <text x="36" y="434" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="#E3000B" letter-spacing="-0.6" text-decoration="underline" text-anchor="start">https://oznacnik.github.io/prijato</text>
+  <text x="36" y="462" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Otevře se v prohlížeči, vyplnění zabere ~5 minut. Žádný účet, žádné cookies.</text>
+  <text x="36" y="481" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Po odeslání ti vyskočí e-mail s předvyplněnou zprávou, jen ji odešleš.</text>
+
+  <rect x="36" y="516" width="722" height="92" fill="none" stroke="#000000" stroke-width="4"/>
+  <text x="54" y="544" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="10" font-weight="700" fill="#E3000B" letter-spacing="2" text-decoration="none" text-anchor="start">DEADLINE PRO VYPLNĚNÍ</text>
+  <text x="54" y="586" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="32" font-weight="700" fill="#000000" letter-spacing="-1" text-decoration="none" text-anchor="start">pátek 1. 5. 2026</text>
+
+  <text x="36" y="640" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="9" font-weight="700" fill="#888888" letter-spacing="2.4" text-decoration="none" text-anchor="start">JAKÁKOLIV OTÁZKA</text>
+  <text x="36" y="664" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Napiš rovnou na e-mail. Odpovídá Ptáček.</text>
+  <text x="36" y="696" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="20" font-weight="700" fill="#000000" letter-spacing="-0.4" text-decoration="underline" text-anchor="start">GalerieOznacnik@proton.me</text>
+
+  <rect y="1095" width="794" height="6" fill="#000000"/>
+  <text x="36" y="1096" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="8" font-weight="400" fill="#888888" letter-spacing="1.6" text-decoration="none" text-anchor="start">Strana 4 / 4 / Další kroky</text>
+  <text x="758" y="1096" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="8" font-weight="400" fill="#888888" letter-spacing="1.6" text-decoration="none" text-anchor="end">Ptáček / 2026</text>
+  <rect y="1115" width="794" height="8" fill="#E3000B"/>
+</svg>

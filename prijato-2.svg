@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 794 1123" width="794" height="1123">
+  <rect width="794" height="1123" fill="#FFFFFF"/>
+  
+  <rect y="0" width="794" height="8" fill="#E3000B"/>
+
+  <text x="36" y="44" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="8" font-weight="700" fill="#888888" letter-spacing="2.4" text-decoration="none" text-anchor="start">CO POTŘEBUJEŠ VĚDĚT</text>
+  <text x="36" y="82" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="30" font-weight="700" fill="#000000" letter-spacing="-1" text-decoration="none" text-anchor="start">Galerie, podmínky, technika.</text>
+<rect y="104" width="794" height="3" fill="#000000"/>
+
+  <line x1="0" y1="107" x2="794" y2="107" stroke="#000000" stroke-width="2"/>
+  <line x1="60" y1="107" x2="60" y2="206" stroke="#000000" stroke-width="2"/>
+  <text x="36" y="139" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#E3000B" letter-spacing="-1.2" text-decoration="none" text-anchor="start">A</text>
+  <text x="74" y="133" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#000000" letter-spacing="1.6" text-decoration="none" text-anchor="start">CO JE GALERIE OZNAČNÍK</text>
+  <text x="74" y="155" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Guerilla galerie. Výstavní prostory jsou prázdné reklamní rámečky pražských</text>
+  <text x="74" y="172" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">tramvajových zastávek. Zastávka = 1 výstavní jednotka (2 označníky).</text>
+  <text x="74" y="189" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Otevřeno 24/7, vstup zdarma. Délku výstavy určuje DPP — finisáž = vyklízení.</text>
+
+  <line x1="0" y1="206" x2="794" y2="206" stroke="#000000" stroke-width="2"/>
+  <line x1="60" y1="206" x2="60" y2="288" stroke="#000000" stroke-width="2"/>
+  <text x="36" y="238" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#E3000B" letter-spacing="-1.2" text-decoration="none" text-anchor="start">B</text>
+  <text x="74" y="232" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#000000" letter-spacing="1.6" text-decoration="none" text-anchor="start">DISCLAIMER</text>
+  <text x="74" y="254" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Je to guerilla. Neoficiální, nepovolené, bez financování. Materiál si hradí</text>
+  <text x="74" y="271" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">každý sám. Délku výstavy neurčujeme my — DPP plochu vyklidí, a to je finisáž.</text>
+
+  <line x1="0" y1="288" x2="794" y2="288" stroke="#000000" stroke-width="2"/>
+  <line x1="60" y1="288" x2="60" y2="370" stroke="#000000" stroke-width="2"/>
+  <text x="36" y="320" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#E3000B" letter-spacing="-1.2" text-decoration="none" text-anchor="start">C</text>
+  <text x="74" y="314" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#000000" letter-spacing="1.6" text-decoration="none" text-anchor="start">PŘIDĚLOVÁNÍ MÍST</text>
+  <text x="74" y="336" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Každý dostane jednu zastávku (= 2 označníky). Co přesně do rámů dáš</text>
+  <text x="74" y="353" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">a jak to rozdělíš, je na tobě. Jeden motiv může být ve více kopiích.</text>
+
+  <line x1="0" y1="370" x2="794" y2="370" stroke="#000000" stroke-width="2"/>
+  <line x1="60" y1="370" x2="60" y2="452" stroke="#000000" stroke-width="2"/>
+  <text x="36" y="402" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#E3000B" letter-spacing="-1.2" text-decoration="none" text-anchor="start">D</text>
+  <text x="74" y="396" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#000000" letter-spacing="1.6" text-decoration="none" text-anchor="start">CO DOSTANEŠ ZPĚT</text>
+  <text x="74" y="418" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Místo na webu galerie (volitelné), dokumentaci tvého díla, pomoc</text>
+  <text x="74" y="435" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">s instalací (volitelné), záznam ve filmu (volitelné — souhlas v formuláři).</text>
+<line x1="0" y1="452" x2="794" y2="452" stroke="#000000" stroke-width="2"/>
+
+  <text x="36" y="476" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="8" font-weight="700" fill="#888888" letter-spacing="2.4" text-decoration="none" text-anchor="start">TECHNICKÉ SPECIFIKACE</text>
+  <text x="36" y="508" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#000000" letter-spacing="-0.7" text-decoration="none" text-anchor="start">Označník = A3, minus 2 cm v rámu.</text>
+
+  <line x1="0" y1="532" x2="794" y2="532" stroke="#000000" stroke-width="2"/>
+  <line x1="100" y1="532" x2="100" y2="614" stroke="#000000" stroke-width="2"/>
+  <text x="36" y="555" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#000000" letter-spacing="-1.2" text-decoration="none" text-anchor="start">FORMÁT</text>
+  <text x="114" y="558" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#000000" letter-spacing="1.6" text-decoration="none" text-anchor="start">ROZMĚRY</text>
+  <text x="114" y="580" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">A3 (297 × 420 mm) na šířku. Pozor: rám zastávky překryje cca 2 cm tisku</text>
+  <text x="114" y="597" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">po obvodu — nech si bezpečnou zónu.</text>
+
+  <line x1="0" y1="614" x2="794" y2="614" stroke="#000000" stroke-width="2"/>
+  <line x1="100" y1="614" x2="100" y2="696" stroke="#000000" stroke-width="2"/>
+  <text x="36" y="637" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#000000" letter-spacing="-1.2" text-decoration="none" text-anchor="start">PAPÍR</text>
+  <text x="114" y="640" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#000000" letter-spacing="1.6" text-decoration="none" text-anchor="start">GRAMÁŽ</text>
+  <text x="114" y="662" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Doporučená ~220 g/m². Drží tvar, nevlní se, vejde se za plastový kryt.</text>
+  <text x="114" y="679" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Tenčí se kroutí, tlustší nejde zasunout.</text>
+
+  <line x1="0" y1="696" x2="794" y2="696" stroke="#000000" stroke-width="2"/>
+  <line x1="100" y1="696" x2="100" y2="778" stroke="#000000" stroke-width="2"/>
+  <text x="36" y="719" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#000000" letter-spacing="-1.2" text-decoration="none" text-anchor="start">MÉDIUM</text>
+  <text x="114" y="722" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#000000" letter-spacing="1.6" text-decoration="none" text-anchor="start">CO SE HODÍ</text>
+  <text x="114" y="744" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Tisk, malba, linoryt, sítotisk — médium je na tobě.</text>
+  <text x="114" y="761" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="12" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Důležité je, že to drží na A3 papíře.</text>
+<line x1="0" y1="778" x2="794" y2="778" stroke="#000000" stroke-width="2"/>
+
+  <rect y="1095" width="794" height="6" fill="#000000"/>
+  <text x="36" y="1096" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="8" font-weight="400" fill="#888888" letter-spacing="1.6" text-decoration="none" text-anchor="start">Strana 2 / 3 — Galerie &amp; technika</text>
+  <text x="758" y="1096" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="8" font-weight="400" fill="#888888" letter-spacing="1.6" text-decoration="none" text-anchor="end">Ptáček / 2026</text>
+  <rect y="1115" width="794" height="8" fill="#E3000B"/>
+</svg>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 794 1123" width="794" height="1123">
+  <rect width="794" height="1123" fill="#FFFFFF"/>
+  <rect y="0" width="794" height="8" fill="#E3000B"/>
+
+  <text x="36" y="72" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="9" font-weight="400" fill="#888888" letter-spacing="2.4" text-decoration="none" text-anchor="start">GALERIE OZNAČNÍK / PRAHA / 2026</text>
+  <text x="32" y="176" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="110" font-weight="700" fill="#000000" letter-spacing="-4" text-decoration="none" text-anchor="start">PŘI</text>
+  <text x="32" y="276" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="110" font-weight="700" fill="#E3000B" letter-spacing="-4" text-decoration="none" text-anchor="start">JATO.</text>
+<rect y="298" width="794" height="6" fill="#000000"/>
+
+  <rect y="304" width="794" height="92" fill="#000000"/>
+  <text x="36" y="340" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#FFFFFF" letter-spacing="-0.4" text-decoration="none" text-anchor="start">Děkujeme za přihlášku.</text>
+  <text x="36" y="370" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#E3000B" letter-spacing="-0.4" text-decoration="none" text-anchor="start">Jsi v programu kolektivní výstavy.</text>
+<rect y="396" width="794" height="6" fill="#000000"/>
+
+  <text x="36" y="426" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="9" font-weight="700" fill="#888888" letter-spacing="2.4" text-decoration="none" text-anchor="start">CO BUDE NÁSLEDOVAT</text>
+  <text x="36" y="452" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Tři kroky, které tě čekají. Detaily k podmínkám a vernisáži</text>
+
+  <line x1="0" y1="502" x2="794" y2="502" stroke="#000000" stroke-width="3"/>
+  <line x1="90" y1="502" x2="90" y2="593" stroke="#000000" stroke-width="3"/>
+  <text x="32" y="570" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="56" font-weight="700" fill="#E3000B" letter-spacing="-2.5" text-decoration="none" text-anchor="start">01</text>
+  <text x="106" y="536" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#000000" letter-spacing="-0.4" text-decoration="none" text-anchor="start">VYPLŇ FORMULÁŘ</text>
+  <text x="106" y="558" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Formulář obsahuje všechny podstatné informace pro instalaci.</text>
+
+  <line x1="0" y1="593" x2="794" y2="593" stroke="#000000" stroke-width="3"/>
+  <line x1="90" y1="593" x2="90" y2="684" stroke="#000000" stroke-width="3"/>
+  <text x="32" y="661" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="56" font-weight="700" fill="#E3000B" letter-spacing="-2.5" text-decoration="none" text-anchor="start">02</text>
+  <text x="106" y="627" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#000000" letter-spacing="-0.4" text-decoration="none" text-anchor="start">PŘIPRAV DÍLA</text>
+  <text x="106" y="649" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Připrav díla podle technických specifikací.</text>
+
+  <line x1="0" y1="684" x2="794" y2="684" stroke="#000000" stroke-width="3"/>
+  <line x1="90" y1="684" x2="90" y2="813" stroke="#000000" stroke-width="3"/>
+  <text x="32" y="752" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="56" font-weight="700" fill="#E3000B" letter-spacing="-2.5" text-decoration="none" text-anchor="start">03</text>
+  <text x="106" y="718" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#000000" letter-spacing="-0.4" text-decoration="none" text-anchor="start">DORAZÍŠ NA VERNISÁŽ / INSTALACI</text>
+  <text x="106" y="740" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Společná instalace je zároveň vernisáž.</text>
+  <text x="106" y="759" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Sejdeme se, projdeme trasu, každý si obsadí</text>
+  <text x="106" y="778" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">svou zastávku. Pomoc s instalací k dispozici, pokud o ni požádáš.</text>
+<line x1="0" y1="813" x2="794" y2="813" stroke="#000000" stroke-width="3"/>
+
+  <rect y="1095" width="794" height="6" fill="#000000"/>
+  <text x="36" y="1096" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="8" font-weight="400" fill="#888888" letter-spacing="1.6" text-decoration="none" text-anchor="start">Strana 1 / 3 / Přijato</text>
+  <text x="758" y="1096" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="8" font-weight="400" fill="#888888" letter-spacing="1.6" text-decoration="none" text-anchor="end">Galerie Označník / Praha</text>
+  <rect y="1115" width="794" height="8" fill="#E3000B"/>
+</svg>

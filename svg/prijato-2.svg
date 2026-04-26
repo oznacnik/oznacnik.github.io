@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 794 1123" width="794" height="1123">
+  <rect width="794" height="1123" fill="#FFFFFF"/>
+  <rect y="0" width="794" height="8" fill="#E3000B"/>
+
+  <text x="36" y="44" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="9" font-weight="700" fill="#888888" letter-spacing="2.4" text-decoration="none" text-anchor="start">CO BEREŠ NA SEBE</text>
+  <text x="34" y="104" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="56" font-weight="700" fill="#000000" letter-spacing="-2" text-decoration="none" text-anchor="start">DISCLAIMER</text>
+  <text x="34" y="160" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="56" font-weight="700" fill="#E3000B" letter-spacing="-2" text-decoration="none" text-anchor="start">ZASTÁVKA.</text>
+
+  <line x1="0" y1="200" x2="794" y2="200" stroke="#000000" stroke-width="3"/>
+  <text x="36" y="284" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="72" font-weight="700" fill="#E3000B" letter-spacing="-2" text-decoration="none" text-anchor="start">DISCLAIMER</text>
+  <text x="36" y="300.24" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#000000" letter-spacing="2.4" text-decoration="none" text-anchor="start">GUERILLA. VLASTNÍ ZODPOVĚDNOST.</text>
+  <text x="36" y="335.24" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Je to guerilla. Neoficiální, bez financování.</text>
+  <text x="36" y="354.24" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Materiál si hradí každý sám.</text>
+  <text x="36" y="373.24" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Délku výstavy neurčujeme my, určuje ji DPP. Průměrná délka isntalace je týden.</text>
+
+  <line x1="0" y1="395.24" x2="794" y2="395.24" stroke="#000000" stroke-width="3"/>
+  <text x="36" y="463.24" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="56" font-weight="700" fill="#000000" letter-spacing="-2" text-decoration="none" text-anchor="start">ZASTÁVKA</text>
+  <text x="36" y="480.76" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#000000" letter-spacing="2.4" text-decoration="none" text-anchor="start">1 ZASTÁVKA = 2 OZNAČNÍKY.</text>
+  <text x="36" y="515.76" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Tvůj výstavní prostor je zastávka. Označník je ten informační rámeček</text>
+  <text x="36" y="534.76" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">na zastávce, do kterého instalujeme.</text>
+  <text x="36" y="553.76" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Jedna zastávka má dva označníky. Oba patří tobě.</text>
+  <text x="36" y="572.76" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">Můžeš si v formuláři říct o víc zastávek. Pak máš odpovídajícím</text>
+  <text x="36" y="591.76" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#333333" letter-spacing="0" text-decoration="none" text-anchor="start">způsobem víc označníků k zaplnění. Konkrétní zastávky přidělí algoritmus, který náhodně vybírá.</text>
+<line x1="0" y1="613.76" x2="794" y2="613.76" stroke="#000000" stroke-width="3"/>
+
+  <rect y="1095" width="794" height="6" fill="#000000"/>
+  <text x="36" y="1096" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="8" font-weight="400" fill="#888888" letter-spacing="1.6" text-decoration="none" text-anchor="start">Strana 2 / 4 / Disclaimer / Zastávka</text>
+  <text x="758" y="1096" font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="8" font-weight="400" fill="#888888" letter-spacing="1.6" text-decoration="none" text-anchor="end">Ptáček / 2026</text>
+  <rect y="1115" width="794" height="8" fill="#E3000B"/>
+</svg>

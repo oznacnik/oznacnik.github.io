@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="1200" height="700">
+  <defs>
+    <!-- Arc paths -->
+    <path id="arcOuter" d="M 80,680 A 560,560 0 0,1 1120,680" fill="none"/>
+    <path id="arcSmall" d="M 160,680 A 480,480 0 0,1 1040,680" fill="none"/>
+
+    <!-- Glow filter -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="glowBig">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- 4-point star shapes -->
+    <polygon id="s4" points="0,-10 2.5,-2.5 10,0 2.5,2.5 0,10 -2.5,2.5 -10,0 -2.5,-2.5"/>
+    <polygon id="s4b" points="0,-16 4,-4 16,0 4,4 0,16 -4,4 -16,0 -4,-4"/>
+    <polygon id="s4xl" points="0,-22 5,-5 22,0 5,5 0,22 -5,5 -22,0 -5,-5"/>
+  </defs>
+
+  <!-- Black background -->
+  <rect width="1200" height="700" fill="#080808"/>
+
+  <!-- ====== RAINBOW ARC ====== -->
+  <!-- Each stripe is a concentric arc, outermost first -->
+  <path d="M 60,690 A 570,570 0 0,1 1140,690" fill="none" stroke="#FF0000" stroke-width="56" stroke-linecap="round"/>
+  <path d="M 60,690 A 570,570 0 0,1 1140,690" fill="none" stroke="#FF5500" stroke-width="46" stroke-linecap="round"/>
+  <path d="M 60,690 A 570,570 0 0,1 1140,690" fill="none" stroke="#FFCC00" stroke-width="36" stroke-linecap="round"/>
+  <path d="M 60,690 A 570,570 0 0,1 1140,690" fill="none" stroke="#00CC44" stroke-width="26" stroke-linecap="round"/>
+  <path d="M 60,690 A 570,570 0 0,1 1140,690" fill="none" stroke="#0055FF" stroke-width="16" stroke-linecap="round"/>
+  <path d="M 60,690 A 570,570 0 0,1 1140,690" fill="none" stroke="#6622CC" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- ====== STARS — LEFT ====== -->
+  <g filter="url(#glow)">
+    <use href="#s4xl" x="55" y="100" fill="#FFFFFF"/>
+    <use href="#s4b" x="30" y="200" fill="#FFE87C"/>
+    <use href="#s4xl" x="85" y="280" fill="#FFFFFF"/>
+    <use href="#s4" x="40" y="360" fill="#FFE87C"/>
+    <use href="#s4b" x="110" y="400" fill="#FFFFFF"/>
+    <use href="#s4xl" x="50" y="470" fill="#FFE87C"/>
+    <use href="#s4" x="20" y="540" fill="#FFFFFF"/>
+    <use href="#s4" x="120" y="160" fill="#FFFFFF" opacity="0.5"/>
+    <use href="#s4" x="130" y="330" fill="#FFE87C" opacity="0.5"/>
+    <use href="#s4" x="95" y="540" fill="#FFE87C" opacity="0.6"/>
+    <use href="#s4b" x="140" y="240" fill="#FFFFFF" opacity="0.4"/>
+    <use href="#s4" x="70" y="60" fill="#FFE87C" opacity="0.6"/>
+  </g>
+
+  <!-- ====== STARS — RIGHT ====== -->
+  <g filter="url(#glow)">
+    <use href="#s4xl" x="1145" y="100" fill="#FFFFFF"/>
+    <use href="#s4b" x="1170" y="200" fill="#FFE87C"/>
+    <use href="#s4xl" x="1115" y="280" fill="#FFFFFF"/>
+    <use href="#s4" x="1160" y="360" fill="#FFE87C"/>
+    <use href="#s4b" x="1090" y="400" fill="#FFFFFF"/>
+    <use href="#s4xl" x="1150" y="470" fill="#FFE87C"/>
+    <use href="#s4" x="1180" y="540" fill="#FFFFFF"/>
+    <use href="#s4" x="1080" y="160" fill="#FFFFFF" opacity="0.5"/>
+    <use href="#s4" x="1070" y="330" fill="#FFE87C" opacity="0.5"/>
+    <use href="#s4" x="1105" y="540" fill="#FFE87C" opacity="0.6"/>
+    <use href="#s4b" x="1060" y="240" fill="#FFFFFF" opacity="0.4"/>
+    <use href="#s4" x="1130" y="60" fill="#FFE87C" opacity="0.6"/>
+  </g>
+
+  <!-- ====== STARS — scattered top center ====== -->
+  <g filter="url(#glow)" opacity="0.45">
+    <use href="#s4" x="280" y="50" fill="#FFFFFF"/>
+    <use href="#s4" x="450" y="35" fill="#FFE87C"/>
+    <use href="#s4" x="600" y="28" fill="#FFFFFF"/>
+    <use href="#s4" x="750" y="35" fill="#FFE87C"/>
+    <use href="#s4" x="920" y="50" fill="#FFFFFF"/>
+    <use href="#s4" x="370" y="90" fill="#FFE87C"/>
+    <use href="#s4" x="830" y="85" fill="#FFFFFF"/>
+    <use href="#s4" x="530" y="70" fill="#FFE87C"/>
+    <use href="#s4" x="680" y="65" fill="#FFFFFF"/>
+  </g>
+
+  <!-- ====== TEXT: "MY FIRST" — above the rainbow ====== -->
+  <text font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="38" fill="#FFE500" filter="url(#glowBig)" letter-spacing="14">
+    <textPath href="#arcOuter" startOffset="50%" text-anchor="middle">MY FIRST</textPath>
+  </text>
+
+  <!-- ====== TEXT: "SURVEILLANCE SYSTEM" — on the rainbow ====== -->
+  <text font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="56" fill="#FFFFFF" filter="url(#glowBig)" letter-spacing="4">
+    <textPath href="#arcSmall" startOffset="50%" text-anchor="middle">SURVEILLANCE SYSTEM</textPath>
+  </text>
+  <!-- Yellow outline echo -->
+  <text font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="56" fill="none" stroke="#FFEE00" stroke-width="1" letter-spacing="4" opacity="0.5">
+    <textPath href="#arcSmall" startOffset="50%" text-anchor="middle">SURVEILLANCE SYSTEM</textPath>
+  </text>
+
+  <!-- ====== Decorative 5-point stars near ends of text ====== -->
+  <g fill="#FFDD00" filter="url(#glow)">
+    <use href="#s4b" x="240" y="510" fill="#FFE87C"/>
+    <use href="#s4b" x="960" y="510" fill="#FFE87C"/>
+  </g>
+
+</svg>

@@ -1,0 +1,216 @@
+@import "tailwindcss";
+
+/* ─── TRAM GALLERY — Design System ──────────────────────────────────────────
+   Moholy-Nagy "Dynamik der Gross-Stadt" (1927) DNA:
+   Massive type, black horizontal bars, high contrast, no softness.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --bg: #FFFFFF;
+  --text: #000000;
+  --dpp: #E3000B;
+  --bar-height: 8px;
+  --border-thick: 4px;
+  --ex-color: #E3000B;
+}
+
+@theme inline {
+  --color-black: #000000;
+  --color-white: #FFFFFF;
+  --color-dpp: #E3000B;
+  --font-sans: "Helvetica Neue", "Helvetica", "Arial Black", "Arial", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Helvetica Neue", "Helvetica", "Arial Black", "Arial", sans-serif;
+  font-weight: 700;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: var(--bg);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── Typography ─────────────────────────────────────────────────────────── */
+
+.type-display {
+  font-size: clamp(80px, 18vw, 200px);
+  font-weight: 900;
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+.type-xl {
+  font-size: clamp(48px, 10vw, 120px);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+
+.type-lg {
+  font-size: clamp(28px, 5vw, 64px);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.type-md {
+  font-size: clamp(18px, 3vw, 36px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.type-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.type-body {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.6;
+  letter-spacing: 0;
+  text-transform: none;
+  font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+}
+
+/* ─── Structural elements ────────────────────────────────────────────────── */
+
+.bar {
+  width: 100%;
+  height: var(--bar-height);
+  background: var(--text);
+  flex-shrink: 0;
+  display: block;
+}
+
+.bar-thick {
+  height: 16px;
+}
+
+.bar-thin {
+  height: 4px;
+}
+
+.frame {
+  border: var(--border-thick) solid var(--text);
+}
+
+/* ─── Exhibition color theming ───────────────────────────────────────────── */
+
+.ex-bg {
+  background-color: var(--ex-color);
+}
+
+.ex-text {
+  color: var(--ex-color);
+}
+
+.ex-border {
+  border-color: var(--ex-color);
+}
+
+/* ─── Navigation ─────────────────────────────────────────────────────────── */
+
+.nav-link {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--text);
+  border-bottom: 2px solid transparent;
+  padding-bottom: 2px;
+  transition: border-color 0.1s;
+}
+
+.nav-link:hover {
+  border-bottom-color: var(--dpp);
+}
+
+.nav-link.active {
+  border-bottom-color: var(--dpp);
+}
+
+/* ─── Stop diagram ───────────────────────────────────────────────────────── */
+
+.stop-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 3px solid var(--text);
+  background: var(--bg);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.stop-dot-active {
+  background: var(--ex-color);
+  border-color: var(--ex-color);
+}
+
+.stop-line-seg {
+  width: 3px;
+  flex: 1;
+  min-height: 24px;
+  background: var(--text);
+  margin: 0 auto;
+}
+
+.stop-line-seg-active {
+  background: var(--ex-color);
+}
+
+/* ─── Vertical label ─────────────────────────────────────────────────────── */
+
+.rotate-label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  white-space: nowrap;
+}
+
+/* ─── Markdown prose ─────────────────────────────────────────────────────── */
+
+.prose-gallery {
+  font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 640px;
+}
+
+.prose-gallery h1,
+.prose-gallery h2,
+.prose-gallery h3 {
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  margin-top: 2em;
+  margin-bottom: 0.5em;
+}
+
+.prose-gallery p {
+  margin-bottom: 1em;
+}
+
+.prose-gallery strong { font-weight: 700; }
+.prose-gallery em { font-style: italic; }

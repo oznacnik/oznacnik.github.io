@@ -96,8 +96,6 @@ export default async function Home() {
         <div className="mt-8 max-w-2xl">
           <div className="bar bar-thin mb-4" />
           <p className="type-body" style={{ fontWeight: 400 }}>
-            Výstavní prostory galerie jsou prázdné reklamní rámečky na pražských tramvajových zastávkách.
-            Každý úsek linky je samostatná výstava. Cestující projíždí galerií, aniž to ví.
             
           </p>
           <div className="bar bar-thin mt-4" />

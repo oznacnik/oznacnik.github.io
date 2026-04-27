@@ -33,13 +33,13 @@ export default function OGaleriiPage() {
           <div className="type-label mb-6" style={{ color: "#888" }}>Manifest</div>
           <div className="prose-gallery">
             <p>
-              Galerie Označník je galerie současného umění, jejíž výstavní prostory jsou prázdné reklamní rámečky
-              na pražských tramvajových zastávkách.
+              Galerie Označník je guerilla projekt, který roubuje galerijní koncept na tramvajové zastávky v Praze. Jako výstavní médium využívá prázdné reklamní plochy v označnících. Označník je veřejná infrastruktura. Věříme, že město patří všem.
+
+Výhodou je vysoká expozice. Výstavu vidí každý, kdo čeká na tramvaj. Finisáž může přijít kdykoli, za den, za měsíc. Sami nevíme. Rozhoduje DPP.
+
+Projekt je dočasný. Dopravní podnik v blízké době změní  řešení pražských označníků. Prázdné plochy, zmizí. S ní zmizí i Galerie Označník v podobě, jakou má teď. Naše okno příležitosti se zavře.
             </p>
-            <p>
-              Každý úsek tramvajové linky je samostatná výstava. Galerie nemá stálé sídlo
-              a je rozptýlena po celém městě, v infrastruktuře každodenního pohybu.
-            </p>
+   
             <p>
             </p>
           </div>
@@ -83,12 +83,7 @@ export default function OGaleriiPage() {
               GalerieOznacnik@protonmail.com
             </a>
           </div>
-          <div className="p-6 border-4 border-black">
-            <div className="type-label mb-3" style={{ color: DPP }}>Jedno pravidlo</div>
-            <p style={{ fontWeight: 400, fontSize: 14, lineHeight: 1.6 }}>
-              Respektujte ostatní. Pokud je v rámečku dílo někoho jiného, najděte prázdný. A nikdy nepřekrývejte provozní informace DPP. Výluky, změny tras, mimořádnosti. Ty tam jsou pro cestující, ne pro nás.
-            </p>
-          </div>
+          
         </div>
       </div>
 

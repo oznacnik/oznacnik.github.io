@@ -46,8 +46,23 @@ function isFilled(s: FormState): { ok: boolean; missing: string[] } {
   const missing: string[] = [];
   if (!s.name.trim()) missing.push("jméno");
   if (!s.email.trim() || !/^\S+@\S+\.\S+$/.test(s.email)) missing.push("e-mail");
-  if (!s.stops || parseInt(s.stops, 10) < 1) missing.push("zastávky");
+  const stopsNum = parseInt(s.stops, 10);
+  if (!s.stops || stopsNum < 1) missing.push("zastávky");
   if (!s.works.some((w) => w.title.trim())) missing.push("seznam děl");
+  // Součet kopií musí přesně sednout na počet označníků (stops × 2)
+  if (stopsNum >= 1 && s.works.some((w) => w.title.trim())) {
+    const slots = stopsNum * 2;
+    const total = s.works.reduce((acc, w) => {
+      const n = parseInt(w.count, 10);
+      return acc + (isNaN(n) ? 0 : n);
+    }, 0);
+    if (total !== slots) {
+      const diff = total - slots;
+      missing.push(
+        diff > 0 ? `počet kopií (o ${diff} víc)` : `počet kopií (chybí ${Math.abs(diff)})`
+      );
+    }
+  }
   if (!s.web) missing.push("web");
   if (!s.popisek) missing.push("popisek");
   if (!s.film) missing.push("film");
@@ -220,6 +235,7 @@ export default function PrijatoForm() {
     "idle"
   );
   const [submitDetail, setSubmitDetail] = useState<string>("");
+  const [showValidation, setShowValidation] = useState(false);
 
   const status = useMemo(() => isFilled(s), [s]);
   const filled = useMemo(() => filledCount(s), [s]);
@@ -248,6 +264,7 @@ export default function PrijatoForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!status.ok) {
+      setShowValidation(true);
       setTouched(
         new Set([
           "name",
@@ -728,6 +745,21 @@ export default function PrijatoForm() {
         >
           {submitState === "sending" ? COPY.submit.sending : COPY.submit.idle}
         </button>
+        {showValidation && !status.ok && (
+          <div
+            className="type-body"
+            style={{
+              color: DPP,
+              border: `3px solid ${DPP}`,
+              padding: "12px 16px",
+              flexBasis: "100%",
+              maxWidth: 720,
+            }}
+          >
+            <strong>Něco ještě chybí:</strong>{" "}
+            <span style={{ color: "#000" }}>{status.missing.join(", ")}</span>
+          </div>
+        )}
         {(submitState === "error" || submitState === "warning") && (
           <div
             className="type-body"

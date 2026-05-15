@@ -31,11 +31,17 @@ export default function ScoutingMap({
   const [hideUntouched, setHideUntouched] = useState(true);
   const [showRoute, setShowRoute] = useState(true);
 
-  // Časová sekvence anotovaných zastávek = trasa scoutingu
+  // Časová sekvence dokončených zastávek (pending vynechán — bulk migrace
+  // jim přepsala updated_at na stejný čas, takže by trasu rozhodily).
   const route = useMemo(
     () =>
       stops
-        .filter((s) => s.annotation && s.annotation.status !== "untouched")
+        .filter(
+          (s) =>
+            s.annotation &&
+            s.annotation.status !== "untouched" &&
+            s.annotation.status !== "pending"
+        )
         .map((s) => ({
           stop_id: s.stop_id,
           stop_name: s.stop_name,
@@ -54,23 +60,13 @@ export default function ScoutingMap({
       const maplibre = await import("maplibre-gl");
       await import("maplibre-gl/dist/maplibre-gl.css");
 
-      // Bílá prázdná "mapa" — žádné dlaždice, jen souřadnicový prostor.
-      // Markery se kreslí v overlay divu nad ní.
-      const blankStyle = {
-        version: 8 as const,
-        sources: {},
-        layers: [
-          {
-            id: "background",
-            type: "background" as const,
-            paint: { "background-color": "#ffffff" },
-          },
-        ],
-      };
+      const style =
+        process.env.NEXT_PUBLIC_MAP_STYLE ||
+        "https://tiles.openfreemap.org/styles/liberty";
 
       const map = new maplibre.Map({
         container: mapRef.current!,
-        style: blankStyle,
+        style,
         center: [14.42, 50.075],
         zoom: 11.5,
         maxZoom: 17,
@@ -268,7 +264,14 @@ export default function ScoutingMap({
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "#000" }}>
-      <div ref={mapRef} style={{ position: "absolute", inset: 0 }} />
+      <div
+        ref={mapRef}
+        style={{
+          position: "absolute",
+          inset: 0,
+          filter: "grayscale(1) contrast(1.05)",
+        }}
+      />
       <div
         ref={overlayRef}
         style={{

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   STATUS_COLORS,
   STATUS_LABELS,
@@ -28,6 +28,24 @@ export default function ScoutingMap({
   const meEl = useRef<HTMLDivElement | null>(null);
   const [me, setMe] = useState<{ lat: number; lon: number } | null>(null);
   const [filter, setFilter] = useState<"all" | "untouched" | "pending" | "scouted" | "ready" | "blocked">("all");
+  const [hideUntouched, setHideUntouched] = useState(true);
+  const [showRoute, setShowRoute] = useState(true);
+
+  // Časová sekvence anotovaných zastávek = trasa scoutingu
+  const route = useMemo(
+    () =>
+      stops
+        .filter((s) => s.annotation && s.annotation.status !== "untouched")
+        .map((s) => ({
+          stop_id: s.stop_id,
+          stop_name: s.stop_name,
+          lat: s.lat,
+          lon: s.lon,
+          updated_at: s.annotation!.updated_at,
+        }))
+        .sort((a, b) => a.updated_at.localeCompare(b.updated_at)),
+    [stops]
+  );
 
   useEffect(() => {
     if (!mapRef.current || mapInstance.current) return;
@@ -36,13 +54,23 @@ export default function ScoutingMap({
       const maplibre = await import("maplibre-gl");
       await import("maplibre-gl/dist/maplibre-gl.css");
 
-      const style =
-        process.env.NEXT_PUBLIC_MAP_STYLE ||
-        "https://tiles.openfreemap.org/styles/liberty";
+      // Bílá prázdná "mapa" — žádné dlaždice, jen souřadnicový prostor.
+      // Markery se kreslí v overlay divu nad ní.
+      const blankStyle = {
+        version: 8 as const,
+        sources: {},
+        layers: [
+          {
+            id: "background",
+            type: "background" as const,
+            paint: { "background-color": "#ffffff" },
+          },
+        ],
+      };
 
       const map = new maplibre.Map({
         container: mapRef.current!,
-        style,
+        style: blankStyle,
         center: [14.42, 50.075],
         zoom: 11.5,
         maxZoom: 17,
@@ -50,13 +78,45 @@ export default function ScoutingMap({
 
       mapInstance.current = map;
 
+      const drawRoute = () => {
+        if (!showRoute || route.length < 2) return;
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.style.cssText = `
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+        `;
+        const points = route
+          .map((r) => {
+            const p = map.project([r.lon, r.lat]);
+            return `${p.x},${p.y}`;
+          })
+          .join(" ");
+        const polyline = document.createElementNS(svgNS, "polyline");
+        polyline.setAttribute("points", points);
+        polyline.setAttribute("fill", "none");
+        polyline.setAttribute("stroke", "#000");
+        polyline.setAttribute("stroke-width", "2");
+        polyline.setAttribute("stroke-dasharray", "4 4");
+        polyline.setAttribute("stroke-linejoin", "round");
+        polyline.setAttribute("stroke-linecap", "round");
+        polyline.setAttribute("opacity", "0.55");
+        svg.appendChild(polyline);
+        overlayRef.current!.appendChild(svg);
+      };
+
       const drawMarkers = () => {
         if (!overlayRef.current) return;
         overlayRef.current.innerHTML = "";
+        drawRoute();
 
         stops.forEach((s) => {
           const status = s.annotation?.status ?? "untouched";
           if (filter !== "all" && status !== filter) return;
+          if (hideUntouched && status === "untouched") return;
 
           const color = STATUS_COLORS[status];
           const el = document.createElement("a");
@@ -123,9 +183,33 @@ export default function ScoutingMap({
     const map = mapInstance.current;
     overlayRef.current.innerHTML = "";
 
+    if (showRoute && route.length >= 2) {
+      const svgNS = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(svgNS, "svg");
+      svg.style.cssText = "position:absolute;inset:0;width:100%;height:100%;pointer-events:none;";
+      const points = route
+        .map((r) => {
+          const p = map.project([r.lon, r.lat]);
+          return `${p.x},${p.y}`;
+        })
+        .join(" ");
+      const polyline = document.createElementNS(svgNS, "polyline");
+      polyline.setAttribute("points", points);
+      polyline.setAttribute("fill", "none");
+      polyline.setAttribute("stroke", "#000");
+      polyline.setAttribute("stroke-width", "2");
+      polyline.setAttribute("stroke-dasharray", "4 4");
+      polyline.setAttribute("stroke-linejoin", "round");
+      polyline.setAttribute("stroke-linecap", "round");
+      polyline.setAttribute("opacity", "0.55");
+      svg.appendChild(polyline);
+      overlayRef.current.appendChild(svg);
+    }
+
     stops.forEach((s) => {
       const status = s.annotation?.status ?? "untouched";
       if (filter !== "all" && status !== filter) return;
+      if (hideUntouched && status === "untouched") return;
       const color = STATUS_COLORS[status];
       const el = document.createElement("a");
       el.href = `/scouting/${token}/${s.stop_id}`;
@@ -167,7 +251,7 @@ export default function ScoutingMap({
       el.style.top = `${p.y}px`;
       overlayRef.current!.appendChild(el);
     }
-  }, [filter, me, stops, token]);
+  }, [filter, me, stops, token, hideUntouched, showRoute, route]);
 
   const findMe = () => {
     if (!navigator.geolocation) return;
@@ -217,23 +301,61 @@ export default function ScoutingMap({
           >
             ← Seznam
           </Link>
-          <button
-            onClick={findMe}
-            style={{
-              padding: "6px 10px",
-              fontSize: 11,
-              letterSpacing: "0.08em",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              fontFamily: "inherit",
-              border: "2px solid #00B341",
-              background: me ? "#00B341" : "transparent",
-              color: me ? "#000" : "#00B341",
-              cursor: "pointer",
-            }}
-          >
-            {me ? "U mě" : "Najít mě"}
-          </button>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => setShowRoute((v) => !v)}
+              style={{
+                padding: "6px 10px",
+                fontSize: 11,
+                letterSpacing: "0.08em",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                fontFamily: "inherit",
+                border: "2px solid #fff",
+                background: showRoute ? "#fff" : "transparent",
+                color: showRoute ? "#000" : "#fff",
+                cursor: "pointer",
+              }}
+              title={showRoute ? "Skrýt trasu scoutingu" : "Zobrazit trasu scoutingu"}
+            >
+              {showRoute ? "✓ Trasa" : "Trasa"}
+            </button>
+            <button
+              onClick={() => setHideUntouched((v) => !v)}
+              style={{
+                padding: "6px 10px",
+                fontSize: 11,
+                letterSpacing: "0.08em",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                fontFamily: "inherit",
+                border: "2px solid #fff",
+                background: hideUntouched ? "transparent" : "#fff",
+                color: hideUntouched ? "#fff" : "#000",
+                cursor: "pointer",
+              }}
+              title={hideUntouched ? "Zobrazit i nezhodnocené" : "Skrýt nezhodnocené"}
+            >
+              {hideUntouched ? "+ Nezhodnocené" : "− Nezhodnocené"}
+            </button>
+            <button
+              onClick={findMe}
+              style={{
+                padding: "6px 10px",
+                fontSize: 11,
+                letterSpacing: "0.08em",
+                fontWeight: 700,
+                textTransform: "uppercase",
+                fontFamily: "inherit",
+                border: "2px solid #00B341",
+                background: me ? "#00B341" : "transparent",
+                color: me ? "#000" : "#00B341",
+                cursor: "pointer",
+              }}
+            >
+              {me ? "U mě" : "Najít mě"}
+            </button>
+          </div>
         </div>
         <div className="flex flex-wrap gap-1 mt-2">
           {(["all", "untouched", "pending", "scouted", "ready", "blocked"] as const).map((s) => {

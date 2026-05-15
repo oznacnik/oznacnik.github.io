@@ -1,11 +1,17 @@
 import { createClient } from "@supabase/supabase-js";
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+// Při buildu (page-data collection) Vercel volá moduly před tím, než se
+// načtou env vars. Placeholder URL umožní createClient() neselhat při
+// importu — skutečné požadavky stejně proběhnou až za běhu, kdy už
+// proměnné jsou.
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
+const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key";
 
-if (!url || !anon) {
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
   // eslint-disable-next-line no-console
-  console.warn("Supabase: chybí NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY v .env.local");
+  console.warn(
+    "Supabase: NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY není nastaveno — používám placeholder, požadavky selžou."
+  );
 }
 
 export const supabase = createClient(url, anon, {

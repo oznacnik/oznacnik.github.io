@@ -82,19 +82,34 @@ export default function StopList({
           <div className="font-black uppercase" style={{ letterSpacing: "0.1em", fontSize: 14 }}>
             Scouting
           </div>
-          <Link
-            href={`/scouting/${token}/map`}
-            className="font-black uppercase no-underline"
-            style={{
-              fontSize: 11,
-              letterSpacing: "0.12em",
-              color: "#E3000B",
-              border: "2px solid #E3000B",
-              padding: "6px 10px",
-            }}
-          >
-            Mapa →
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href={`/scouting/${token}/new`}
+              className="font-black uppercase no-underline"
+              style={{
+                fontSize: 11,
+                letterSpacing: "0.12em",
+                color: "#fff",
+                border: "2px solid #fff",
+                padding: "6px 10px",
+              }}
+            >
+              + Nová
+            </Link>
+            <Link
+              href={`/scouting/${token}/map`}
+              className="font-black uppercase no-underline"
+              style={{
+                fontSize: 11,
+                letterSpacing: "0.12em",
+                color: "#E3000B",
+                border: "2px solid #E3000B",
+                padding: "6px 10px",
+              }}
+            >
+              Mapa →
+            </Link>
+          </div>
         </div>
         <input
           type="search"

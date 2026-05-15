@@ -20,10 +20,16 @@ export default async function StopPage({
   const stop = await fetchStop(stopId);
   if (!stop) notFound();
 
-  // Načti další zastávku abychom mohli "save & next" navigovat
+  // Předáme všechny zastávky aby klient mohl po Save & Next vybrat
+  // nejbližší podle GPS místo abecedního pořadí.
   const all = await fetchStopsWithAnnotations();
-  const idx = all.findIndex((s) => s.stop_id === stopId);
-  const nextStop = idx >= 0 && idx < all.length - 1 ? all[idx + 1] : null;
+  const candidates = all.map((s) => ({
+    stop_id: s.stop_id,
+    stop_name: s.stop_name,
+    lat: s.lat,
+    lon: s.lon,
+    status: s.annotation?.status ?? "untouched",
+  }));
 
-  return <StopDetail token={token} stop={stop} nextStopId={nextStop?.stop_id ?? null} />;
+  return <StopDetail token={token} stop={stop} candidates={candidates} />;
 }

@@ -6,20 +6,29 @@ import { useState } from "react";
 import {
   STATUS_COLORS,
   STATUS_LABELS,
+  distanceMetres,
   type StopWithAnnotation,
 } from "@/lib/scouting";
 import { supabase, SCOUTING_BUCKET, scoutingPhotoUrl, type ScoutingStatus } from "@/lib/supabase";
 
 const STATUSES: ScoutingStatus[] = ["untouched", "scouted", "ready", "blocked"];
 
+interface Candidate {
+  stop_id: string;
+  stop_name: string;
+  lat: number;
+  lon: number;
+  status: ScoutingStatus;
+}
+
 export default function StopDetail({
   token,
   stop,
-  nextStopId,
+  candidates,
 }: {
   token: string;
   stop: StopWithAnnotation;
-  nextStopId: string | null;
+  candidates: Candidate[];
 }) {
   const router = useRouter();
   const a = stop.annotation;
@@ -71,6 +80,31 @@ export default function StopDetail({
     setPhotos((p) => p.filter((x) => x !== path));
   };
 
+  const getLocation = (): Promise<{ lat: number; lon: number }> =>
+    new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error("Geolokace není dostupná"));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+        (err) => reject(new Error(err.message)),
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+      );
+    });
+
+  const findNearestNext = (me: { lat: number; lon: number }): Candidate | null => {
+    // Preferuj untouched/scouted (ještě nedoděláno), bez aktuální zastávky.
+    const todo = candidates.filter(
+      (c) => c.stop_id !== stop.stop_id && (c.status === "untouched" || c.status === "scouted")
+    );
+    const pool = todo.length > 0 ? todo : candidates.filter((c) => c.stop_id !== stop.stop_id);
+    if (pool.length === 0) return null;
+    return pool.reduce((best, cur) =>
+      distanceMetres(me, cur) < distanceMetres(me, best) ? cur : best
+    );
+  };
+
   const save = async (advance: boolean) => {
     setSaving(true);
     setError(null);
@@ -91,11 +125,23 @@ export default function StopDetail({
           { onConflict: "stop_id" }
         );
       if (saveErr) throw saveErr;
-      if (advance && nextStopId) {
-        router.push(`/scouting/${token}/${nextStopId}`);
-      } else {
-        router.push(`/scouting/${token}`);
+
+      if (advance) {
+        try {
+          const me = await getLocation();
+          const next = findNearestNext(me);
+          if (next) {
+            router.push(`/scouting/${token}/${next.stop_id}`);
+            router.refresh();
+            return;
+          }
+        } catch (geoErr) {
+          // Geolokace selhala / odmítnuta → spadnem do listu
+          console.warn("[scouting] geolokace selhala, jdu na seznam:", geoErr);
+        }
       }
+
+      router.push(`/scouting/${token}`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Uložení selhalo");
@@ -333,7 +379,7 @@ export default function StopDetail({
         >
           {saving ? "Ukládám…" : "Uložit"}
         </button>
-        {nextStopId && (
+        {candidates.length > 1 && (
           <button
             onClick={() => save(true)}
             disabled={saving}
@@ -350,8 +396,9 @@ export default function StopDetail({
               color: "#fff",
               cursor: saving ? "wait" : "pointer",
             }}
+            title="Uloží a navede tě GPSkou na nejbližší zastávku, kterou jsi ještě nedoanotoval"
           >
-            Uložit & další →
+            {saving ? "Ukládám…" : "Uložit & nejbližší →"}
           </button>
         )}
       </div>

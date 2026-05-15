@@ -94,11 +94,11 @@ export default function StopDetail({
     });
 
   const findNearestNext = (me: { lat: number; lon: number }): Candidate | null => {
-    // Preferuj untouched/scouted (ještě nedoděláno), bez aktuální zastávky.
-    const todo = candidates.filter(
-      (c) => c.stop_id !== stop.stop_id && (c.status === "untouched" || c.status === "scouted")
+    // Pouze ještě nezhodnocené (untouched). Vše ostatní (scouted/ready/blocked)
+    // je už anotované a přeskakujeme.
+    const pool = candidates.filter(
+      (c) => c.stop_id !== stop.stop_id && c.status === "untouched"
     );
-    const pool = todo.length > 0 ? todo : candidates.filter((c) => c.stop_id !== stop.stop_id);
     if (pool.length === 0) return null;
     return pool.reduce((best, cur) =>
       distanceMetres(me, cur) < distanceMetres(me, best) ? cur : best

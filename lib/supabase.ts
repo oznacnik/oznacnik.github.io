@@ -25,7 +25,7 @@ export interface ScoutingStop {
   lon: number;
 }
 
-export type ScoutingStatus = "untouched" | "scouted" | "ready" | "blocked";
+export type ScoutingStatus = "untouched" | "pending" | "scouted" | "ready" | "blocked";
 
 export interface ScoutingAnnotation {
   stop_id: string;

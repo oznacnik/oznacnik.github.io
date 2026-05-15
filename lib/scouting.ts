@@ -60,6 +60,7 @@ export function distanceMetres(
 
 export const STATUS_COLORS: Record<string, string> = {
   untouched: "#bbbbbb",
+  pending: "#2962FF",
   scouted: "#FFB800",
   ready: "#00B341",
   blocked: "#E3000B",
@@ -67,6 +68,7 @@ export const STATUS_COLORS: Record<string, string> = {
 
 export const STATUS_LABELS: Record<string, string> = {
   untouched: "Nezhodnoceno",
+  pending: "Rozděláno",
   scouted: "Zhodnoceno",
   ready: "Připraveno",
   blocked: "Nepoužitelné",

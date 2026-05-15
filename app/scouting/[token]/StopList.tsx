@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   STATUS_COLORS,
   STATUS_LABELS,
@@ -9,7 +9,7 @@ import {
   type StopWithAnnotation,
 } from "@/lib/scouting";
 
-type StatusFilter = "all" | "untouched" | "scouted" | "ready" | "blocked";
+type StatusFilter = "all" | "untouched" | "pending" | "scouted" | "ready" | "blocked";
 
 export default function StopList({
   token,
@@ -25,7 +25,7 @@ export default function StopList({
 
   // Spočítat counts pro filtr badges
   const counts = useMemo(() => {
-    const c: Record<string, number> = { all: stops.length, untouched: 0, scouted: 0, ready: 0, blocked: 0 };
+    const c: Record<string, number> = { all: stops.length, untouched: 0, pending: 0, scouted: 0, ready: 0, blocked: 0 };
     for (const s of stops) {
       const st = s.annotation?.status ?? "untouched";
       c[st] = (c[st] ?? 0) + 1;
@@ -130,7 +130,7 @@ export default function StopList({
           }}
         />
         <div className="flex gap-2 mt-3 flex-wrap">
-          {(["all", "untouched", "scouted", "ready", "blocked"] as StatusFilter[]).map((s) => {
+          {(["all", "untouched", "pending", "scouted", "ready", "blocked"] as StatusFilter[]).map((s) => {
             const active = filter === s;
             const color = s === "all" ? "#fff" : STATUS_COLORS[s];
             return (

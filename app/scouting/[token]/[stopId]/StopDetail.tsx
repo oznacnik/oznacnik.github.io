@@ -11,7 +11,7 @@ import {
 } from "@/lib/scouting";
 import { supabase, SCOUTING_BUCKET, scoutingPhotoUrl, type ScoutingStatus } from "@/lib/supabase";
 
-const STATUSES: ScoutingStatus[] = ["untouched", "scouted", "ready", "blocked"];
+const STATUSES: ScoutingStatus[] = ["untouched", "pending", "scouted", "ready", "blocked"];
 
 interface Candidate {
   stop_id: string;

@@ -27,7 +27,7 @@ export default function ScoutingMap({
   const mapInstance = useRef<MapInstance | null>(null);
   const meEl = useRef<HTMLDivElement | null>(null);
   const [me, setMe] = useState<{ lat: number; lon: number } | null>(null);
-  const [filter, setFilter] = useState<"all" | "untouched" | "scouted" | "ready" | "blocked">("all");
+  const [filter, setFilter] = useState<"all" | "untouched" | "pending" | "scouted" | "ready" | "blocked">("all");
 
   useEffect(() => {
     if (!mapRef.current || mapInstance.current) return;
@@ -236,7 +236,7 @@ export default function ScoutingMap({
           </button>
         </div>
         <div className="flex flex-wrap gap-1 mt-2">
-          {(["all", "untouched", "scouted", "ready", "blocked"] as const).map((s) => {
+          {(["all", "untouched", "pending", "scouted", "ready", "blocked"] as const).map((s) => {
             const active = filter === s;
             const color = s === "all" ? "#fff" : STATUS_COLORS[s];
             return (

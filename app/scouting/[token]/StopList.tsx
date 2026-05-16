@@ -97,6 +97,19 @@ export default function StopList({
               + Nová
             </Link>
             <Link
+              href={`/scouting/${token}/stats`}
+              className="font-black uppercase no-underline"
+              style={{
+                fontSize: 11,
+                letterSpacing: "0.12em",
+                color: "#fff",
+                border: "2px solid #fff",
+                padding: "6px 10px",
+              }}
+            >
+              Σ
+            </Link>
+            <Link
               href={`/scouting/${token}/map`}
               className="font-black uppercase no-underline"
               style={{

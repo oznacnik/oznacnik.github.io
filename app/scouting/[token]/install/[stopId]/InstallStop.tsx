@@ -22,9 +22,12 @@ interface AvailableLabel {
   label_seq: number;
 }
 
-// Tihle autoři nesmí být přiřazeni jako 1. ani 2. claim — uživatelská
-// preference (aby vernisáž "začala dobře" jinými autory).
+// Restrikce pro úvodní claimy vernisáže:
+// - První 3 claimy NESMÍ být tihle autoři (user-spec).
 const DEFERRED_AT_START = new Set(["krsnajedy", "terka"]);
+// - První 3 claimy NESMÍ být malí autoři (cíl: otestovat flow na velkém).
+const START_CLAIMS_COUNT = 3;
+const START_MIN_REQUESTED_STOPS = 5;
 
 export default function InstallStop({
   token,
@@ -94,9 +97,15 @@ export default function InstallStop({
       if (filtered.length > 0) pool = filtered;
     }
 
-    // Na 1. a 2. claim vyloučit deferred autory (krys_na_jedy, Terez).
-    if (claimsCountSoFar < 2) {
-      const filteredStart = pool.filter((a) => !DEFERRED_AT_START.has(a.id));
+    // Na první 3 claimy: vyloučit deferred autory (krys_na_jedy, Terez)
+    // A vyloučit malé autory — chceme začít vernisáž na velkém autorovi
+    // (Nikol/Vaculík/Veronika/Vavrečka) pro test flow.
+    if (claimsCountSoFar < START_CLAIMS_COUNT) {
+      const filteredStart = pool.filter(
+        (a) =>
+          !DEFERRED_AT_START.has(a.id) &&
+          (a.requested_stops ?? 0) >= START_MIN_REQUESTED_STOPS
+      );
       if (filteredStart.length > 0) pool = filteredStart;
     }
 

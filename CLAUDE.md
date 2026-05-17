@@ -31,8 +31,10 @@
 
 - Pool = autoři s `requested_stops > 0` a `claimedStops < requested_stops`
 - Vyloučit **posledního přiřazeného** (avoid back-to-back)
-- Na 1. a 2. claim navíc vyloučit **`krsnajedy` + `terka`** — user-spec
-  („nesmí být úplně první ani druzí")
+- **Na první 3 claimy:** vyloučit `krsnajedy` + `terka` AND vyloučit
+  malé autory (`requested_stops < 5`). Cíl: úvod vernisáže testuje
+  flow na velkém autorovi (Nikol/Vaculík/Veronika/Vavrečka). Po 3.
+  claimu se restrikce uvolní a malí mohou padnout.
 - **Filter na velikost zastávky:** zastávka má proměnný počet označníků
   (1—6, default 2). Autor potřebuje aspoň `oznacniku_usable` volných
   labelů, ideálně **+2 navíc** ať mu zbyde aspoň na 1 další standardní

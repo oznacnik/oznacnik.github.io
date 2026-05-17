@@ -57,6 +57,7 @@ interface Author {
   name: string;
   popisek_consent: boolean;
   requested_stops: number | null;
+  web_consent: boolean;
 }
 interface Work {
   id: string;
@@ -97,8 +98,11 @@ function planAuthorLabels(author: Author, works: Work[]): { work_id: string; lab
 }
 
 async function ensureLabels(): Promise<QrLabel[]> {
+  // VŠICHNI autoři dostanou labels (popisek_consent rozhoduje až o vizuálu).
+  // Důvod: oznacnik = label s QR (i pro neuvedené autory blank popisek
+  // s "GALERIE OZNAČNÍK"). Zajistí complete coverage tracking.
   const [{ data: authorsData }, { data: worksData }, { data: existing }] = await Promise.all([
-    sb.from("oznacnik_authors").select("*").eq("popisek_consent", true),
+    sb.from("oznacnik_authors").select("*"),
     sb.from("oznacnik_works").select("*"),
     sb.from("oznacnik_qr_labels").select("*"),
   ]);
@@ -243,10 +247,18 @@ const s = StyleSheet.create({
     color: "#000",
     textAlign: "right",
   },
+  blankBigTitle: {
+    fontSize: 16,
+    fontWeight: 700,
+    letterSpacing: -0.5,
+    lineHeight: 1.0,
+    color: "#000",
+  },
 });
 
 interface LabelData {
   qr_index: number;
+  blank: boolean; // true = autor nechtěl popisek, render jen "GALERIE OZNAČNÍK" + QR
   authorName: string;
   workTitle: string;
   workTech: string | null;
@@ -276,25 +288,41 @@ function LabelsDocument({ labels }: { labels: LabelData[] }) {
             React.createElement(
               View,
               { style: s.label, key: l.qr_index },
-              React.createElement(
-                View,
-                { style: s.textCol },
-                React.createElement(
-                  View,
-                  {},
-                  React.createElement(Text, { style: s.authorName }, l.authorName),
-                  React.createElement(Text, { style: s.workTitle }, l.workTitle),
-                  l.workTech &&
-                    React.createElement(Text, { style: s.workTech }, l.workTech),
-                  l.workYear &&
-                    React.createElement(Text, { style: s.workYear }, l.workYear)
-                ),
-                React.createElement(
-                  Text,
-                  { style: s.galleryFooter },
-                  "Galerie Označník · 2026"
-                )
-              ),
+              l.blank
+                ? React.createElement(
+                    View,
+                    { style: s.textCol },
+                    React.createElement(
+                      View,
+                      {},
+                      React.createElement(Text, { style: s.blankBigTitle }, "GALERIE"),
+                      React.createElement(Text, { style: s.blankBigTitle }, "OZNAČNÍK")
+                    ),
+                    React.createElement(
+                      Text,
+                      { style: s.galleryFooter },
+                      "Vernisáž 2026"
+                    )
+                  )
+                : React.createElement(
+                    View,
+                    { style: s.textCol },
+                    React.createElement(
+                      View,
+                      {},
+                      React.createElement(Text, { style: s.authorName }, l.authorName),
+                      React.createElement(Text, { style: s.workTitle }, l.workTitle),
+                      l.workTech &&
+                        React.createElement(Text, { style: s.workTech }, l.workTech),
+                      l.workYear &&
+                        React.createElement(Text, { style: s.workYear }, l.workYear)
+                    ),
+                    React.createElement(
+                      Text,
+                      { style: s.galleryFooter },
+                      "Galerie Označník · 2026"
+                    )
+                  ),
               React.createElement(
                 View,
                 { style: s.qrCol },
@@ -338,6 +366,7 @@ async function buildLabelData(labels: QrLabel[]): Promise<LabelData[]> {
 
     out.push({
       qr_index: l.qr_index,
+      blank: !a.popisek_consent,
       authorName: a.name,
       workTitle: w.title,
       workTech: w.technique || null,

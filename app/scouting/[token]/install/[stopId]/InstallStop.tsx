@@ -64,7 +64,7 @@ export default function InstallStop({
     });
   }, [authors]);
 
-  const rollAuthor = () => {
+  const rollAuthor = async () => {
     if (candidates.length === 0) {
       setError("Žádný autor už nemá volnou kvótu.");
       return;
@@ -79,9 +79,6 @@ export default function InstallStop({
     }
 
     // Inverse weighting: autor s MENŠÍ remaining kvótou má VĚTŠÍ šanci.
-    // Důvod: malí autoři (např. Alžběta 2 zast.) se rychle naplní; velcí
-    // (Nikol 13) zůstanou v poolu a dostávají postupně ostatní stopy.
-    // Použijeme weight = 1 / remaining, normalizovaný.
     const weights: Array<{ id: string; w: number }> = pool.map((a) => {
       const remaining = (a.requested_stops ?? 0) - a.claimedStops;
       return { id: a.id, w: remaining > 0 ? 1 / remaining : 0 };
@@ -102,14 +99,99 @@ export default function InstallStop({
     }
 
     const pickedAuthor = authors.find((a) => a.id === picked);
-    setAuthorId(picked);
-    // Auto-zaškrtnout díla když má autor jen 1 unikátní (typicky Vaculík).
-    if (pickedAuthor && pickedAuthor.works.length === 1) {
-      setWorkIds([pickedAuthor.works[0].id]);
-    } else {
-      setWorkIds([]);
-    }
+    if (!pickedAuthor) return;
+
     setError(null);
+    setSaving(true);
+    try {
+      // Pre-determinace: vyber N labelů z autorova nevyužitého poolu.
+      // N = oznacniku_usable na zastávce, default 2.
+      const slots = stop.annotation?.oznacniku_usable ?? 2;
+
+      // Pokud byly k zastávce přiřazeny labely od jiného autora (přerolování),
+      // nejdřív je odpáruj.
+      if (labelsHere.length > 0) {
+        await supabase
+          .from("oznacnik_qr_labels")
+          .update({ stop_id: null, placed_at: null })
+          .in("qr_index", labelsHere.map((l) => l.qr_index));
+      }
+
+      // Najdi N volných labelů od pickedAuthor
+      const { data: available, error: availErr } = await supabase
+        .from("oznacnik_qr_labels")
+        .select("qr_index, work_id, author_id, label_seq, placed_at")
+        .eq("author_id", picked)
+        .is("stop_id", null)
+        .limit(100); // dost pro výběr
+      if (availErr) throw availErr;
+
+      if (!available || available.length === 0) {
+        setError(`Autor ${pickedAuthor.name} nemá žádné volné popisky.`);
+        setSaving(false);
+        return;
+      }
+
+      // Náhodný výběr N. Preferuj různé works (diversity) když máme možnost.
+      const shuffled = [...available].sort(() => Math.random() - 0.5);
+      const picks: typeof shuffled = [];
+      const usedWorks = new Set<string>();
+      // Round 1: jeden per unikátní work
+      for (const l of shuffled) {
+        if (picks.length >= slots) break;
+        if (!usedWorks.has(l.work_id)) {
+          picks.push(l);
+          usedWorks.add(l.work_id);
+        }
+      }
+      // Round 2: zbytek čímkoliv
+      for (const l of shuffled) {
+        if (picks.length >= slots) break;
+        if (!picks.find((p) => p.qr_index === l.qr_index)) {
+          picks.push(l);
+        }
+      }
+
+      const pickedIndices = picks.map((p) => p.qr_index);
+      const pickedWorkIds = Array.from(new Set(picks.map((p) => p.work_id)));
+
+      // Páruj labels se stopem
+      const now = new Date().toISOString();
+      const { error: pairErr } = await supabase
+        .from("oznacnik_qr_labels")
+        .update({ stop_id: stop.stop_id, placed_at: now })
+        .in("qr_index", pickedIndices);
+      if (pairErr) throw pairErr;
+
+      // Vytvoř / přepiš claim
+      const { error: claimErr } = await supabase.from("oznacnik_claims").upsert(
+        {
+          stop_id: stop.stop_id,
+          author_id: picked,
+          work_ids: pickedWorkIds,
+          notes: notes.trim() || null,
+        },
+        { onConflict: "stop_id" }
+      );
+      if (claimErr) throw claimErr;
+
+      // Update local state
+      setAuthorId(picked);
+      setWorkIds(pickedWorkIds);
+      setLabelsHere(
+        picks.map((p) => ({
+          qr_index: p.qr_index,
+          work_id: p.work_id,
+          author_id: p.author_id,
+          label_seq: p.label_seq,
+          placed_at: now,
+        }))
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Roll selhal");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const toggleWork = (workId: string) => {
@@ -519,44 +601,58 @@ export default function InstallStop({
         </section>
       )}
 
-      {/* QR popisky spárované s touto zastávkou */}
+      {/* Použij tyhle popisky (předpřiřazené při CLAIM) */}
       {selectedAuthor && (
-        <section style={{ padding: 16, background: "#fff", borderBottom: "2px solid #ddd" }}>
-          <div style={eyebrow}>QR popisky na této zastávce ({labelsHere.length})</div>
+        <section style={{ padding: 16, background: "#fff", borderBottom: "3px solid #000" }}>
+          <div style={eyebrow}>
+            Nalep tyhle popisky ({labelsHere.length})
+          </div>
 
-          {labelsHere.length > 0 && (
-            <div className="flex flex-col gap-2 mb-3">
+          {labelsHere.length > 0 ? (
+            <div
+              className="grid gap-3"
+              style={{ gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" }}
+            >
               {labelsHere.map((l) => {
-                const author = authors.find((a) => a.id === l.author_id);
+                const work = selectedAuthor.works.find((w) => w.id === l.work_id);
                 return (
                   <div
                     key={l.qr_index}
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      padding: "10px 12px",
-                      border: "2px solid #000",
-                      background: "#f5f5f5",
+                      padding: "16px 12px",
+                      border: "4px solid #000",
+                      background: "#fff",
+                      position: "relative",
                     }}
                   >
-                    <span
+                    <div
                       className="font-black"
                       style={{
-                        fontSize: 16,
-                        letterSpacing: "-0.02em",
+                        fontSize: "clamp(40px, 12vw, 64px)",
+                        letterSpacing: "-0.05em",
+                        lineHeight: 0.9,
                         fontFamily: "monospace",
                       }}
                     >
                       #{String(l.qr_index).padStart(3, "0")}
-                    </span>
-                    <div style={{ flex: 1, fontSize: 12 }}>
-                      {author?.name ?? l.author_id}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 11,
+                        marginTop: 6,
+                        color: "#444",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {work?.title ?? "—"}
                     </div>
                     <button
                       onClick={() => unlinkLabel(l.qr_index)}
                       style={{
-                        fontSize: 11,
+                        position: "absolute",
+                        top: 6,
+                        right: 6,
+                        fontSize: 10,
                         fontWeight: 700,
                         letterSpacing: "0.08em",
                         textTransform: "uppercase",
@@ -565,34 +661,42 @@ export default function InstallStop({
                         background: "transparent",
                         color: "#E3000B",
                         cursor: "pointer",
-                        padding: 0,
+                        padding: 4,
                       }}
                     >
-                      odpárovat
+                      ×
                     </button>
                   </div>
                 );
               })}
             </div>
+          ) : (
+            <div style={{ color: "#888", fontSize: 13, fontStyle: "italic" }}>
+              CLAIM přiřadí konkrétní čísla popisků. Pokud zmáčkneš Rozhodit znova,
+              dostaneš jiná.
+            </div>
           )}
 
+          {/* Manual scan override — pro případ kdy nalepíš jiný */}
           <button
             type="button"
             onClick={() => setScannerOpen(true)}
             style={{
               width: "100%",
-              padding: 14,
-              fontSize: 13,
+              padding: 12,
+              marginTop: 12,
+              fontSize: 11,
               fontWeight: 700,
-              letterSpacing: "0.1em",
+              letterSpacing: "0.12em",
               textTransform: "uppercase",
               fontFamily: "inherit",
-              border: "3px dashed #000",
+              border: "2px solid #888",
               background: "#fff",
+              color: "#888",
               cursor: "pointer",
             }}
           >
-            Naskenovat QR popisek
+            Override: naskenovat jiný QR
           </button>
 
           {scanError && (

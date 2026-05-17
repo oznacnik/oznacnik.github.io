@@ -60,6 +60,9 @@ export default async function InstallStopPage({
     .filter((c) => c.stop_id !== stopId)
     .sort((a, b) => b.claimed_at.localeCompare(a.claimed_at))[0];
 
+  // Total claims count (kromě aktuální zastávky) — pro určení "jsme na začátku"
+  const claimsCountSoFar = claims.filter((c) => c.stop_id !== stopId).length;
+
   return (
     <InstallStop
       token={token}
@@ -69,6 +72,7 @@ export default async function InstallStopPage({
       workPlacements={workPlacements}
       labelsHere={(labelsHere ?? []) as QrLabelHere[]}
       lastAuthorId={lastClaim?.author_id ?? null}
+      claimsCountSoFar={claimsCountSoFar}
     />
   );
 }

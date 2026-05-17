@@ -22,6 +22,10 @@ interface QrLabelHere {
   placed_at: string | null;
 }
 
+// Tihle autoři nesmí být přiřazeni jako 1. ani 2. claim — uživatelská
+// preference (aby vernisáž "začala dobře" jinými autory).
+const DEFERRED_AT_START = new Set(["krsnajedy", "terka"]);
+
 export default function InstallStop({
   token,
   stop,
@@ -30,6 +34,7 @@ export default function InstallStop({
   workPlacements,
   labelsHere: initialLabelsHere,
   lastAuthorId,
+  claimsCountSoFar,
 }: {
   token: string;
   stop: StopWithAnnotation;
@@ -38,6 +43,7 @@ export default function InstallStop({
   workPlacements: Record<string, number>;
   labelsHere: QrLabelHere[];
   lastAuthorId: string | null;
+  claimsCountSoFar: number;
 }) {
   const router = useRouter();
 
@@ -76,6 +82,13 @@ export default function InstallStop({
     if (lastAuthorId && candidates.length > 1) {
       const filtered = candidates.filter((a) => a.id !== lastAuthorId);
       if (filtered.length > 0) pool = filtered;
+    }
+
+    // Na 1. a 2. claim vyloučit deferred autory (krys_na_jedy, Terez) —
+    // user-spec: nesmí být úplně první.
+    if (claimsCountSoFar < 2) {
+      const filteredStart = pool.filter((a) => !DEFERRED_AT_START.has(a.id));
+      if (filteredStart.length > 0) pool = filteredStart;
     }
 
     // Inverse weighting: autor s MENŠÍ remaining kvótou má VĚTŠÍ šanci.

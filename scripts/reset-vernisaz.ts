@@ -1,14 +1,14 @@
 /**
- * Wipe vernisáž test dat — claims + QR scan logy.
+ * Wipe vernisáž test dat — claims, scan log, label-stop pairings.
  *
  * NESAHÁ na seed data:
- *   - oznacnik_stops (zastávky z GTFS)
- *   - oznacnik_authors / oznacnik_works (autoři a jejich díla)
- *   - oznacnik_qr_labels (vytištěné popisky, 1:1 s work_id)
+ *   - oznacnik_stops, oznacnik_authors, oznacnik_works
+ *   - oznacnik_qr_labels.qr_index/work_id/author_id/label_seq (popisky)
  *
- * MAŽE:
- *   - oznacnik_claims (všechny claimy)
- *   - oznacnik_qr_scans (log scanů)
+ * MAŽE / NULLUJE:
+ *   - oznacnik_claims
+ *   - oznacnik_qr_scans
+ *   - oznacnik_qr_labels.stop_id (odpáruje od zastávek)
  *
  * Run:
  *   npx tsx scripts/reset-vernisaz.ts
@@ -46,23 +46,28 @@ async function ask(question: string): Promise<string> {
 
 async function main() {
   console.log("=== RESET VERNISÁŽ ===\n");
-  console.log("Tohle SMAŽE následující data:");
-  console.log("  - oznacnik_claims          (všechny claimy autor↔zastávka)");
-  console.log("  - oznacnik_qr_scans        (log scanů popisků)");
+  console.log("Tohle SMAŽE / NULLUJE:");
+  console.log("  - oznacnik_claims               (claimy autor↔zastávka)");
+  console.log("  - oznacnik_qr_scans             (log scanů)");
+  console.log("  - oznacnik_qr_labels.stop_id    (odpáruje labels od zast.)");
   console.log();
   console.log("Zůstanou nedotčené:");
   console.log("  - oznacnik_stops, oznacnik_authors, oznacnik_works");
-  console.log("  - oznacnik_qr_labels       (popisky 1:1 s work_id)");
+  console.log("  - oznacnik_qr_labels (qr_index, work_id, author_id, label_seq)");
   console.log();
 
-  // Counts before
-  const [claims, scans] = await Promise.all([
+  const [claims, scans, labels] = await Promise.all([
     sb.from("oznacnik_claims").select("*", { count: "exact", head: true }),
     sb.from("oznacnik_qr_scans").select("*", { count: "exact", head: true }),
+    sb
+      .from("oznacnik_qr_labels")
+      .select("*", { count: "exact", head: true })
+      .not("stop_id", "is", null),
   ]);
   console.log("Současný stav:");
-  console.log(`  - claims:   ${claims.count ?? "?"}`);
-  console.log(`  - qr scans: ${scans.count ?? "?"}`);
+  console.log(`  - claims:             ${claims.count ?? "?"}`);
+  console.log(`  - qr scans:           ${scans.count ?? "?"}`);
+  console.log(`  - labels s stop_id:   ${labels.count ?? "?"}`);
   console.log();
 
   const skipConfirm = process.argv.includes("--yes");
@@ -83,6 +88,13 @@ async function main() {
   const { error: scansErr } = await sb.from("oznacnik_qr_scans").delete().neq("id", 0);
   if (scansErr) throw scansErr;
   console.log("  ✓ scans smazány");
+
+  const { error: unpairErr } = await sb
+    .from("oznacnik_qr_labels")
+    .update({ stop_id: null, placed_at: null })
+    .not("stop_id", "is", null);
+  if (unpairErr) throw unpairErr;
+  console.log("  ✓ labels odpárovány od zastávek");
 
   console.log("\n✓ Reset hotov.");
 }

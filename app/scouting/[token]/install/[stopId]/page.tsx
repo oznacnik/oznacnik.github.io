@@ -4,6 +4,14 @@ import { fetchAuthors, fetchClaims, fetchWorks, buildAuthorsWithProgress } from 
 import { supabase } from "@/lib/supabase";
 import InstallStop from "./InstallStop";
 
+interface QrLabelHere {
+  qr_index: number;
+  work_id: string;
+  author_id: string;
+  label_seq: number;
+  placed_at: string | null;
+}
+
 export const dynamic = "force-dynamic";
 
 export const metadata = {
@@ -40,14 +48,12 @@ export default async function InstallStopPage({
     }
   }
 
-  // Mapa work_id → qr_index (pro zobrazení "QR #N" u každého díla)
-  const { data: qrLabels } = await supabase
+  // Načti QR labels už spárované s touto zastávkou
+  const { data: labelsHere } = await supabase
     .from("oznacnik_qr_labels")
-    .select("qr_index, work_id");
-  const qrByWork: Record<string, number> = {};
-  for (const l of (qrLabels ?? []) as { qr_index: number; work_id: string }[]) {
-    qrByWork[l.work_id] = l.qr_index;
-  }
+    .select("qr_index, work_id, author_id, label_seq, placed_at")
+    .eq("stop_id", stopId)
+    .order("placed_at", { ascending: false });
 
   // Poslední claim (kvůli avoid-back-to-back v random algoritmu)
   const lastClaim = [...claims]
@@ -61,7 +67,7 @@ export default async function InstallStopPage({
       authors={authorsWithProgress}
       existingClaim={existingClaim}
       workPlacements={workPlacements}
-      qrByWork={qrByWork}
+      labelsHere={(labelsHere ?? []) as QrLabelHere[]}
       lastAuthorId={lastClaim?.author_id ?? null}
     />
   );

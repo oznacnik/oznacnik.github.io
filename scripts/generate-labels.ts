@@ -71,31 +71,34 @@ interface QrLabel {
   qr_index: number;
   work_id: string;
   author_id: string;
+  label_seq: number;
 }
 
-// ─── Plán fyzických kopií per work ────────────────────────────────────
+// ─── Plán fyzických popisků per (work, label_seq) ──────────────────────
 // Autor potřebuje requested_stops × 2 fyzických popisků celkem.
-// Rozděleno rovnoměrně mezi jeho unikátní díla.
-function physicalCopiesPerWork(author: Author, works: Work[]): Map<string, number> {
+// Rozdělit rovnoměrně mezi jeho unikátní díla.
+// Output: list of { work_id, label_seq } — každý = jedna physical kopie.
+function planAuthorLabels(
+  author: Author,
+  works: Work[]
+): { work_id: string; label_seq: number }[] {
   const total = (author.requested_stops ?? 0) * 2;
-  const result = new Map<string, number>();
-  if (total === 0 || works.length === 0) return result;
+  if (total === 0 || works.length === 0) return [];
 
   const perWork = Math.ceil(total / works.length);
   const sorted = [...works].sort((a, b) => a.ord - b.ord);
-  let remaining = total;
+  const out: { work_id: string; label_seq: number }[] = [];
+  let made = 0;
   for (const w of sorted) {
-    if (remaining <= 0) break;
-    const n = Math.min(perWork, remaining);
-    result.set(w.id, n);
-    remaining -= n;
+    for (let seq = 1; seq <= perWork && made < total; seq++) {
+      out.push({ work_id: w.id, label_seq: seq });
+      made++;
+    }
   }
-  return result;
+  return out;
 }
 
 async function ensureLabels(): Promise<QrLabel[]> {
-  // Jeden qr_index per dílo. Pro VŠECHNY autory (popisek_consent jen
-  // ovlivňuje vizuál physical labels — blank nebo plný).
   const [{ data: authorsData }, { data: worksData }, { data: existing }] = await Promise.all([
     sb.from("oznacnik_authors").select("*"),
     sb.from("oznacnik_works").select("*"),
@@ -106,16 +109,17 @@ async function ensureLabels(): Promise<QrLabel[]> {
   const works = (worksData ?? []) as Work[];
   const existingLabels = (existing ?? []) as QrLabel[];
 
-  const existingWorkIds = new Set(existingLabels.map((l) => l.work_id));
+  const existingKeys = new Set(existingLabels.map((l) => `${l.work_id}:${l.label_seq}`));
 
-  // Pro každé dílo autora co má requested_stops > 0 => label
-  const toInsert: { work_id: string; author_id: string }[] = [];
+  const toInsert: { work_id: string; author_id: string; label_seq: number }[] = [];
   for (const author of authors) {
     if ((author.requested_stops ?? 0) === 0) continue;
     const authorWorks = works.filter((w) => w.author_id === author.id);
-    for (const w of authorWorks) {
-      if (!existingWorkIds.has(w.id)) {
-        toInsert.push({ work_id: w.id, author_id: author.id });
+    const planned = planAuthorLabels(author, authorWorks);
+    for (const p of planned) {
+      const key = `${p.work_id}:${p.label_seq}`;
+      if (!existingKeys.has(key)) {
+        toInsert.push({ work_id: p.work_id, author_id: author.id, label_seq: p.label_seq });
       }
     }
   }
@@ -276,10 +280,10 @@ function LabelsDocument({ labels }: { labels: LabelData[] }) {
         React.createElement(
           View,
           { style: s.grid },
-          pageLabels.map((l, li) =>
+          pageLabels.map((l) =>
             React.createElement(
               View,
-              { style: s.label, key: `${l.qr_index}-${li}` },
+              { style: s.label, key: l.qr_index },
               l.blank
                 ? React.createElement(
                     View,
@@ -343,22 +347,12 @@ async function buildLabelData(labels: QrLabel[]): Promise<LabelData[]> {
   const authorsMap = new Map<string, Author>();
   for (const a of (authors ?? []) as Author[]) authorsMap.set(a.id, a);
 
-  // Pre-spočítej fyzické kopie per work (kolik kopií tisknout)
-  const copiesByWork = new Map<string, number>();
-  for (const a of authorsMap.values()) {
-    const aWorks = (works ?? []).filter((w) => w.author_id === a.id) as Work[];
-    const plan = physicalCopiesPerWork(a, aWorks);
-    for (const [wid, n] of plan) copiesByWork.set(wid, n);
-  }
-
+  // 1 QR popisek per row v qr_labels = 1 entry v PDF
   const out: LabelData[] = [];
   for (const l of labels) {
     const w = worksMap.get(l.work_id);
     const a = authorsMap.get(l.author_id);
     if (!w || !a) continue;
-
-    const copies = copiesByWork.get(l.work_id) ?? 0;
-    if (copies === 0) continue;
 
     const url = `${SITE_URL}/qr/${l.qr_index}`;
     const qrDataUrl = await QRCode.toDataURL(url, {
@@ -367,18 +361,15 @@ async function buildLabelData(labels: QrLabel[]): Promise<LabelData[]> {
       color: { dark: "#000000", light: "#ffffff" },
     });
 
-    // Vyemituj N fyzických kopií téhož labelu — všechny mají stejný qr_index
-    for (let i = 0; i < copies; i++) {
-      out.push({
-        qr_index: l.qr_index,
-        blank: !a.popisek_consent,
-        authorName: a.name,
-        workTitle: w.title,
-        workTech: w.technique || null,
-        workYear: w.year ? String(w.year) : null,
-        qrDataUrl,
-      });
-    }
+    out.push({
+      qr_index: l.qr_index,
+      blank: !a.popisek_consent,
+      authorName: a.name,
+      workTitle: w.title,
+      workTech: w.technique || null,
+      workYear: w.year ? String(w.year) : null,
+      qrDataUrl,
+    });
   }
   return out;
 }

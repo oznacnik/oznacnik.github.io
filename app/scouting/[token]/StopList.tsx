@@ -97,6 +97,20 @@ export default function StopList({
               + Nová
             </Link>
             <Link
+              href={`/scouting/${token}/install`}
+              className="font-black uppercase no-underline"
+              style={{
+                fontSize: 11,
+                letterSpacing: "0.12em",
+                color: "#E3000B",
+                border: "2px solid #E3000B",
+                padding: "6px 10px",
+                background: "#fff",
+              }}
+            >
+              Vernisáž
+            </Link>
+            <Link
               href={`/scouting/${token}/explore`}
               className="font-black uppercase no-underline"
               style={{
@@ -107,7 +121,7 @@ export default function StopList({
                 padding: "6px 10px",
               }}
             >
-              ▦
+              Explore
             </Link>
             <Link
               href={`/scouting/${token}/stats`}
@@ -120,7 +134,7 @@ export default function StopList({
                 padding: "6px 10px",
               }}
             >
-              Σ
+              Stats
             </Link>
             <Link
               href={`/scouting/${token}/map`}

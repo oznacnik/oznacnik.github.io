@@ -7,7 +7,42 @@ import {
   EXHIBITIONS,
   EXHIBITION_STATIONS,
 } from "./static-data";
+import { supabase } from "./supabase";
 import type { Station, Exhibition, ExhibitionStation, ExhibitionStatus } from "@/types";
+
+// ─── Synthetic "Vernisáž" exhibition driven by oznacnik_claims ───────────────
+// Když máme v DB aspoň jeden claim, vrátíme synthetic Exhibition objekt,
+// který se přidá k ostatním pro home page listing. Detail je vyrenderovaný
+// v app/vystavy/vernisaz/page.tsx (vlastní layout, ne tram-line).
+
+const VERNISAZ_ID = "vernisaz";
+
+async function buildVernisazExhibition(): Promise<Exhibition | null> {
+  try {
+    const { count, error } = await supabase
+      .from("oznacnik_claims")
+      .select("*", { count: "exact", head: true });
+    if (error || count === null || count === 0) return null;
+
+    return {
+      id: VERNISAZ_ID,
+      title: "VERNISÁŽ 2026",
+      subtitle: "Kolektivní výstava napříč Prahou",
+      color: "#E3000B",
+      lineNumbers: [],
+      direction: "po celé Praze",
+      startStationId: "",
+      endStationId: "",
+      status: "current",
+      openedAt: new Date().toISOString(),
+      curatorialText: `${count} obsazených zastávek napříč Prahou. Každá zastávka = jeden autor.`,
+      visitInfo: "Hledejte označníky s díly napříč Prahou.",
+      createdAt: new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}
 
 // ─── Stations ────────────────────────────────────────────────────────────────
 
@@ -23,18 +58,27 @@ export async function getStationsByIds(ids: string[]): Promise<Station[]> {
 // ─── Exhibitions ─────────────────────────────────────────────────────────────
 
 export async function getAllExhibitions(): Promise<Exhibition[]> {
-  return [...EXHIBITIONS].sort(
+  const list = [...EXHIBITIONS];
+  const vernisaz = await buildVernisazExhibition();
+  if (vernisaz) list.push(vernisaz);
+  return list.sort(
     (a, b) => new Date(b.openedAt).getTime() - new Date(a.openedAt).getTime()
   );
 }
 
 export async function getExhibitionsByStatus(status: ExhibitionStatus): Promise<Exhibition[]> {
-  return EXHIBITIONS.filter((e) => e.status === status).sort(
+  const list = EXHIBITIONS.filter((e) => e.status === status);
+  if (status === "current") {
+    const vernisaz = await buildVernisazExhibition();
+    if (vernisaz) list.push(vernisaz);
+  }
+  return list.sort(
     (a, b) => new Date(b.openedAt).getTime() - new Date(a.openedAt).getTime()
   );
 }
 
 export async function getExhibition(id: string): Promise<Exhibition | null> {
+  if (id === VERNISAZ_ID) return buildVernisazExhibition();
   return EXHIBITIONS.find((e) => e.id === id) ?? null;
 }
 

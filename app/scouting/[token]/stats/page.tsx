@@ -201,8 +201,8 @@ function BigPair({
         gap: 16,
       }}
     >
-      <Stat label="Zastávek" value={stops} accent={accent} icon="📍" />
-      <Stat label="Označníků" value={oznacniku} accent={accent} icon="▦" />
+      <Stat label="Zastávek" value={stops} accent={accent} />
+      <Stat label="Označníků" value={oznacniku} accent={accent} />
     </div>
   );
 }
@@ -211,12 +211,10 @@ function Stat({
   label,
   value,
   accent,
-  icon,
 }: {
   label: string;
   value: number;
   accent: string;
-  icon: string;
 }) {
   return (
     <div style={{ minWidth: 0 }}>
@@ -227,12 +225,8 @@ function Stat({
           letterSpacing: "0.16em",
           textTransform: "uppercase",
           opacity: 0.7,
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
         }}
       >
-        <span style={{ fontSize: 14, lineHeight: 1 }}>{icon}</span>
         {label}
       </div>
       <div
@@ -300,13 +294,13 @@ function MutedRow({
           {label}
         </span>
       </div>
-      <SmallStat icon="📍" value={stops} />
-      <SmallStat icon="▦" value={oznacniku} />
+      <SmallStat label="zast." value={stops} />
+      <SmallStat label="ozn." value={oznacniku} />
     </div>
   );
 }
 
-function SmallStat({ icon, value }: { icon: string; value: number | null }) {
+function SmallStat({ label, value }: { label: string; value: number | null }) {
   return (
     <div
       style={{
@@ -314,11 +308,10 @@ function SmallStat({ icon, value }: { icon: string; value: number | null }) {
         alignItems: "baseline",
         gap: 4,
         fontFamily: "inherit",
-        minWidth: 56,
+        minWidth: 70,
         justifyContent: "flex-end",
       }}
     >
-      <span style={{ fontSize: 10, opacity: 0.5 }}>{icon}</span>
       <span
         style={{
           fontSize: 18,
@@ -328,6 +321,17 @@ function SmallStat({ icon, value }: { icon: string; value: number | null }) {
         }}
       >
         {value ?? "—"}
+      </span>
+      <span
+        style={{
+          fontSize: 10,
+          opacity: 0.5,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          fontWeight: 700,
+        }}
+      >
+        {label}
       </span>
     </div>
   );

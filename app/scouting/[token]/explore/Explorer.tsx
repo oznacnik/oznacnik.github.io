@@ -82,7 +82,7 @@ export default function Explorer({
             Explorer
           </div>
           <div style={{ fontSize: 11, color: "#888", letterSpacing: "0.08em" }}>
-            {filtered.length} / {annotated.length} · 📷 {totalPhotos}
+            {filtered.length} / {annotated.length} · {totalPhotos} fotek
           </div>
         </div>
 
@@ -125,14 +125,14 @@ export default function Explorer({
             style={pillStyle(needsPhoto, "#fff")}
             title="Jen zastávky s fotkou"
           >
-            📷
+            Foto
           </button>
           <button
             onClick={() => setNeedsNote((v) => !v)}
             style={pillStyle(needsNote, "#fff")}
             title="Jen zastávky s poznámkou"
           >
-            ✍️
+            Pozn
           </button>
         </div>
       </header>
@@ -247,7 +247,7 @@ function StopCard({
                 letterSpacing: "0.08em",
               }}
             >
-              📷 +{extras.length}
+              +{extras.length} fotek
             </div>
           )}
         </button>
@@ -292,7 +292,7 @@ function StopCard({
               color: "#000",
             }}
           >
-            ▦ {a.oznacniku_usable ?? "?"}/{a.oznacniku_total ?? "?"}
+            {a.oznacniku_usable ?? "?"}/{a.oznacniku_total ?? "?"} ozn.
           </span>
         )}
       </div>

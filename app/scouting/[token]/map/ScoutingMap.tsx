@@ -321,7 +321,7 @@ export default function ScoutingMap({
               }}
               title={showRoute ? "Skrýt trasu scoutingu" : "Zobrazit trasu scoutingu"}
             >
-              {showRoute ? "✓ Trasa" : "Trasa"}
+              {showRoute ? "Trasa: ON" : "Trasa: OFF"}
             </button>
             <button
               onClick={() => setHideUntouched((v) => !v)}

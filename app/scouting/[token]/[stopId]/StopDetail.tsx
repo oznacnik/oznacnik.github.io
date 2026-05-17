@@ -293,7 +293,7 @@ export default function StopDetail({
             background: uploading ? "#eee" : "#fff",
           }}
         >
-          {uploading ? "Nahrávám…" : "📷 Pořídit / vybrat fotku"}
+          {uploading ? "Nahrávám…" : "Pořídit / vybrat fotku"}
           <input
             type="file"
             accept="image/*"

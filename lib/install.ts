@@ -77,17 +77,35 @@ export async function fetchClaims(): Promise<Claim[]> {
   return (data ?? []) as Claim[];
 }
 
+// Mapa author_id → kolik labelů má spárováno s nějakou zastávkou
+export async function fetchLabelsUsedByAuthor(): Promise<Record<string, number>> {
+  const { data, error } = await supabase
+    .from("oznacnik_qr_labels")
+    .select("author_id")
+    .not("stop_id", "is", null);
+  if (error) throw error;
+  const out: Record<string, number> = {};
+  for (const r of (data ?? []) as { author_id: string }[]) {
+    out[r.author_id] = (out[r.author_id] ?? 0) + 1;
+  }
+  return out;
+}
+
 // ── Pomocníci pro UI ─────────────────────────────────────────────────
 
 export interface AuthorWithProgress extends Author {
   claimedStops: number;
+  labelsTotal: number; // = requested_stops × 2
+  labelsUsed: number; // = počet labelů s stop_id != null
+  labelsRemaining: number; // labelsTotal − labelsUsed
   works: Work[];
 }
 
 export function buildAuthorsWithProgress(
   authors: Author[],
   works: Work[],
-  claims: Claim[]
+  claims: Claim[],
+  labelsUsedByAuthor: Record<string, number> = {}
 ): AuthorWithProgress[] {
   const claimedByAuthor: Record<string, number> = {};
   for (const c of claims) claimedByAuthor[c.author_id] = (claimedByAuthor[c.author_id] ?? 0) + 1;
@@ -96,11 +114,18 @@ export function buildAuthorsWithProgress(
     if (!worksByAuthor[w.author_id]) worksByAuthor[w.author_id] = [];
     worksByAuthor[w.author_id].push(w);
   }
-  return authors.map((a) => ({
-    ...a,
-    claimedStops: claimedByAuthor[a.id] ?? 0,
-    works: worksByAuthor[a.id] ?? [],
-  }));
+  return authors.map((a) => {
+    const labelsTotal = (a.requested_stops ?? 0) * 2;
+    const labelsUsed = labelsUsedByAuthor[a.id] ?? 0;
+    return {
+      ...a,
+      claimedStops: claimedByAuthor[a.id] ?? 0,
+      labelsTotal,
+      labelsUsed,
+      labelsRemaining: Math.max(0, labelsTotal - labelsUsed),
+      works: worksByAuthor[a.id] ?? [],
+    };
+  });
 }
 
 // ── Auto-assign: náhodné rozhození ready zastávek autorům dle kvót ─

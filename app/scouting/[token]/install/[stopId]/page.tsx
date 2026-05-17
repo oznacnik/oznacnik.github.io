@@ -1,6 +1,12 @@
 import { notFound } from "next/navigation";
 import { assertToken, fetchStop } from "@/lib/scouting";
-import { fetchAuthors, fetchClaims, fetchWorks, buildAuthorsWithProgress } from "@/lib/install";
+import {
+  fetchAuthors,
+  fetchClaims,
+  fetchWorks,
+  fetchLabelsUsedByAuthor,
+  buildAuthorsWithProgress,
+} from "@/lib/install";
 import { supabase } from "@/lib/supabase";
 import InstallStop from "./InstallStop";
 
@@ -30,13 +36,14 @@ export default async function InstallStopPage({
   const stop = await fetchStop(stopId);
   if (!stop) notFound();
 
-  const [authors, works, claims] = await Promise.all([
+  const [authors, works, claims, labelsUsed] = await Promise.all([
     fetchAuthors(),
     fetchWorks(),
     fetchClaims(),
+    fetchLabelsUsedByAuthor(),
   ]);
 
-  const authorsWithProgress = buildAuthorsWithProgress(authors, works, claims);
+  const authorsWithProgress = buildAuthorsWithProgress(authors, works, claims, labelsUsed);
   const existingClaim = claims.find((c) => c.stop_id === stopId) ?? null;
 
   // Počet umístění každého díla napříč všemi claimy (NE jen na této zastávce).

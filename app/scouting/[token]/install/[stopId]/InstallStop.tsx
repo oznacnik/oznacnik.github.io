@@ -1,18 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { type StopWithAnnotation } from "@/lib/scouting";
 import { authorColor, type AuthorWithProgress, type Claim } from "@/lib/install";
 import { supabase } from "@/lib/supabase";
-
-// Scanner zatížený dynamicky — má native camera, nepotřebujeme při SSR
-const QrScanner = dynamic(
-  () => import("@yudiel/react-qr-scanner").then((m) => m.Scanner),
-  { ssr: false }
-);
 
 interface QrLabelHere {
   qr_index: number;
@@ -20,6 +13,13 @@ interface QrLabelHere {
   author_id: string;
   label_seq: number;
   placed_at: string | null;
+}
+
+interface AvailableLabel {
+  qr_index: number;
+  work_id: string;
+  author_id: string;
+  label_seq: number;
 }
 
 // Tihle autoři nesmí být přiřazeni jako 1. ani 2. claim — uživatelská
@@ -49,15 +49,23 @@ export default function InstallStop({
 
   // Pokud zastávka už má claim, předvyplníme. Jinak čekáme na "rozhození".
   const [authorId, setAuthorId] = useState<string>(existingClaim?.author_id ?? "");
-  const [workIds, setWorkIds] = useState<string[]>(existingClaim?.work_ids ?? []);
   const [notes, setNotes] = useState<string>(existingClaim?.notes ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // QR popisky spárované s touto zastávkou
-  const [labelsHere, setLabelsHere] = useState<QrLabelHere[]>(initialLabelsHere);
-  const [scannerOpen, setScannerOpen] = useState(false);
-  const [scanError, setScanError] = useState<string | null>(null);
+  // QR popisky už spárované s touto zastávkou (z předchozího Save) — read-only
+  // pro tuto session; reuse logika v toggleWork preferuje recyklaci těchto.
+  const labelsHere = initialLabelsHere;
+
+  // Pool volných popisků aktuálního autora (fetched po CLAIM)
+  const [availableLabels, setAvailableLabels] = useState<AvailableLabel[]>([]);
+  const [loadingPool, setLoadingPool] = useState(false);
+
+  // Set vybraných qr_index na téhle zastávce. Pre-fill z labelsHere.
+  // Per-physical-label tracking → každý popisek je samostatně togglable.
+  const [pickedQrIndices, setPickedQrIndices] = useState<Set<number>>(
+    () => new Set(initialLabelsHere.map((l) => l.qr_index))
+  );
 
   const allAuthorIds = useMemo(() => authors.map((a) => a.id), [authors]);
   const selectedAuthor = authors.find((a) => a.id === authorId) ?? null;
@@ -70,31 +78,43 @@ export default function InstallStop({
     });
   }, [authors]);
 
+  // CLAIM = JEN náhodný výběr autora. Žádné DB zápisy, žádné přiřazení
+  // popisků. Viz CLAUDE.md.
   const rollAuthor = async () => {
     if (candidates.length === 0) {
       setError("Žádný autor už nemá volnou kvótu.");
       return;
     }
 
-    // Vyloučit minulého autora (pokud existují i jiní), aby se neopakoval
-    // claim 2× po sobě.
     let pool = candidates;
-    if (lastAuthorId && candidates.length > 1) {
-      const filtered = candidates.filter((a) => a.id !== lastAuthorId);
+
+    // Vyloučit posledního přiřazeného autora.
+    if (lastAuthorId && pool.length > 1) {
+      const filtered = pool.filter((a) => a.id !== lastAuthorId);
       if (filtered.length > 0) pool = filtered;
     }
 
-    // Na 1. a 2. claim vyloučit deferred autory (krys_na_jedy, Terez) —
-    // user-spec: nesmí být úplně první.
+    // Na 1. a 2. claim vyloučit deferred autory (krys_na_jedy, Terez).
     if (claimsCountSoFar < 2) {
       const filteredStart = pool.filter((a) => !DEFERRED_AT_START.has(a.id));
       if (filteredStart.length > 0) pool = filteredStart;
     }
 
-    // Inverse weighting: autor s MENŠÍ remaining kvótou má VĚTŠÍ šanci.
-    const weights: Array<{ id: string; w: number }> = pool.map((a) => {
-      const remaining = (a.requested_stops ?? 0) - a.claimedStops;
-      return { id: a.id, w: remaining > 0 ? 1 / remaining : 0 };
+    // Filter na velikost zastávky: autor potřebuje dost volných labelů +
+    // ideálně 2 navíc ať mu zbyde aspoň na 1 další standardní zastávku.
+    const stopOzn = stop.annotation?.oznacniku_usable ?? 2;
+    const safeFit = pool.filter((a) => a.labelsRemaining >= stopOzn + 2);
+    if (safeFit.length > 0) {
+      pool = safeFit;
+    } else {
+      // Fallback: aspoň autor co tu zastávku celou pokryje
+      const canFill = pool.filter((a) => a.labelsRemaining >= stopOzn);
+      if (canFill.length > 0) pool = canFill;
+    }
+
+    // Inverse weighting: weight = 1 / remaining_labels.
+    const weights = pool.map((a) => {
+      return { id: a.id, w: a.labelsRemaining > 0 ? 1 / a.labelsRemaining : 0 };
     });
     const totalW = weights.reduce((acc, x) => acc + x.w, 0);
     if (totalW === 0) {
@@ -111,116 +131,103 @@ export default function InstallStop({
       }
     }
 
-    const pickedAuthor = authors.find((a) => a.id === picked);
-    if (!pickedAuthor) return;
-
     setError(null);
-    setSaving(true);
+    setAuthorId(picked);
+    setPickedQrIndices(new Set()); // wipe předchozí výběry
+
+    // Async fetch labelů autora: jen ty co jsou volné NEBO už paired s touto
+    // zastávkou (zachovat pre-fill z labelsHere když znovu otevřeš detail).
+    setLoadingPool(true);
     try {
-      // Pre-determinace: vyber N labelů z autorova nevyužitého poolu.
-      // N = oznacniku_usable na zastávce, default 2.
-      const slots = stop.annotation?.oznacniku_usable ?? 2;
-
-      // Pokud byly k zastávce přiřazeny labely od jiného autora (přerolování),
-      // nejdřív je odpáruj.
-      if (labelsHere.length > 0) {
-        await supabase
-          .from("oznacnik_qr_labels")
-          .update({ stop_id: null, placed_at: null })
-          .in("qr_index", labelsHere.map((l) => l.qr_index));
-      }
-
-      // Najdi N volných labelů od pickedAuthor
-      const { data: available, error: availErr } = await supabase
+      const { data, error: poolErr } = await supabase
         .from("oznacnik_qr_labels")
-        .select("qr_index, work_id, author_id, label_seq, placed_at")
+        .select("qr_index, work_id, author_id, label_seq, stop_id")
         .eq("author_id", picked)
-        .is("stop_id", null)
-        .limit(100); // dost pro výběr
-      if (availErr) throw availErr;
-
-      if (!available || available.length === 0) {
-        setError(`Autor ${pickedAuthor.name} nemá žádné volné popisky.`);
-        setSaving(false);
-        return;
-      }
-
-      // Náhodný výběr N. Preferuj různé works (diversity) když máme možnost.
-      const shuffled = [...available].sort(() => Math.random() - 0.5);
-      const picks: typeof shuffled = [];
-      const usedWorks = new Set<string>();
-      // Round 1: jeden per unikátní work
-      for (const l of shuffled) {
-        if (picks.length >= slots) break;
-        if (!usedWorks.has(l.work_id)) {
-          picks.push(l);
-          usedWorks.add(l.work_id);
-        }
-      }
-      // Round 2: zbytek čímkoliv
-      for (const l of shuffled) {
-        if (picks.length >= slots) break;
-        if (!picks.find((p) => p.qr_index === l.qr_index)) {
-          picks.push(l);
-        }
-      }
-
-      const pickedIndices = picks.map((p) => p.qr_index);
-      const pickedWorkIds = Array.from(new Set(picks.map((p) => p.work_id)));
-
-      // Páruj labels se stopem
-      const now = new Date().toISOString();
-      const { error: pairErr } = await supabase
-        .from("oznacnik_qr_labels")
-        .update({ stop_id: stop.stop_id, placed_at: now })
-        .in("qr_index", pickedIndices);
-      if (pairErr) throw pairErr;
-
-      // Vytvoř / přepiš claim
-      const { error: claimErr } = await supabase.from("oznacnik_claims").upsert(
-        {
-          stop_id: stop.stop_id,
-          author_id: picked,
-          work_ids: pickedWorkIds,
-          notes: notes.trim() || null,
-        },
-        { onConflict: "stop_id" }
-      );
-      if (claimErr) throw claimErr;
-
-      // Update local state
-      setAuthorId(picked);
-      setWorkIds(pickedWorkIds);
-      setLabelsHere(
-        picks.map((p) => ({
-          qr_index: p.qr_index,
-          work_id: p.work_id,
-          author_id: p.author_id,
-          label_seq: p.label_seq,
-          placed_at: now,
-        }))
-      );
+        .or(`stop_id.is.null,stop_id.eq.${stop.stop_id}`)
+        .order("qr_index");
+      if (poolErr) throw poolErr;
+      setAvailableLabels((data ?? []) as AvailableLabel[]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Roll selhal");
+      setError(err instanceof Error ? err.message : "Načtení popisků selhalo");
     } finally {
-      setSaving(false);
+      setLoadingPool(false);
     }
   };
 
-  const toggleWork = (workId: string) => {
-    setWorkIds((prev) =>
-      prev.includes(workId) ? prev.filter((id) => id !== workId) : [...prev, workId]
-    );
+  // Sjednocený pool labels k zobrazení = availableLabels (po CLAIM fetch)
+  // OR labelsHere pokud claim existoval. Sortováno per (work ord, label_seq).
+  const visibleLabels = useMemo(() => {
+    const seen = new Set<number>();
+    const merged: { qr_index: number; work_id: string; label_seq: number }[] = [];
+    for (const l of availableLabels) {
+      if (!seen.has(l.qr_index)) {
+        merged.push(l);
+        seen.add(l.qr_index);
+      }
+    }
+    for (const l of labelsHere) {
+      if (!seen.has(l.qr_index)) {
+        merged.push({
+          qr_index: l.qr_index,
+          work_id: l.work_id,
+          label_seq: l.label_seq,
+        });
+        seen.add(l.qr_index);
+      }
+    }
+    return merged;
+  }, [availableLabels, labelsHere]);
+
+  // Unikátní work_ids odvozené z aktuálně vybraných popisků
+  const workIds = useMemo(() => {
+    const out = new Set<string>();
+    for (const qr of pickedQrIndices) {
+      const l = visibleLabels.find((v) => v.qr_index === qr);
+      if (l) out.add(l.work_id);
+    }
+    return Array.from(out);
+  }, [pickedQrIndices, visibleLabels]);
+
+  const toggleLabel = (qrIndex: number) => {
+    setPickedQrIndices((prev) => {
+      const next = new Set(prev);
+      if (next.has(qrIndex)) next.delete(qrIndex);
+      else next.add(qrIndex);
+      return next;
+    });
   };
 
   const save = async () => {
     setError(null);
     if (!authorId) {
-      setError("Nejdřív rozhodi autora.");
+      setError("Nejdřív klikni CLAIM (vybere autora).");
       return;
     }
     setSaving(true);
     try {
+      const newIndices = Array.from(pickedQrIndices);
+      const prevIndices = labelsHere.map((l) => l.qr_index);
+      const releasedIndices = prevIndices.filter((i) => !newIndices.includes(i));
+
+      // 1) Uvolnit labels, které byly na téhle zastávce ale teď už nejsou v picku
+      if (releasedIndices.length > 0) {
+        const { error: relErr } = await supabase
+          .from("oznacnik_qr_labels")
+          .update({ stop_id: null, placed_at: null })
+          .in("qr_index", releasedIndices);
+        if (relErr) throw relErr;
+      }
+
+      // 2) Spárovat nově vybrané labels s touto zastávkou
+      if (newIndices.length > 0) {
+        const { error: pairErr } = await supabase
+          .from("oznacnik_qr_labels")
+          .update({ stop_id: stop.stop_id, placed_at: new Date().toISOString() })
+          .in("qr_index", newIndices);
+        if (pairErr) throw pairErr;
+      }
+
+      // 3) Upsert claim
       const { error: upErr } = await supabase.from("oznacnik_claims").upsert(
         {
           stop_id: stop.stop_id,
@@ -231,90 +238,13 @@ export default function InstallStop({
         { onConflict: "stop_id" }
       );
       if (upErr) throw upErr;
+
       router.push(`/scouting/${token}/install`);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Uložení selhalo");
       setSaving(false);
     }
-  };
-
-  // Naskenoval jsi QR popisek = installation source of truth:
-  //   1) spáruje qr_index ↔ stop_id
-  //   2) auto-claim: pokud claim ještě není, vytvoří. Pokud existuje ale s jiným
-  //      autorem (random rozhodil někoho jiného), přepíše claim na qr.author
-  //      a začne sbírat works od nuly. Pokud claim už je téhož autora,
-  //      jen přidá work_id do work_ids.
-  const handleScannedQr = async (raw: string) => {
-    setScanError(null);
-    const m = raw.trim().match(/\/qr\/(\d+)|^(\d+)$/);
-    const qrIndex = m ? parseInt(m[1] || m[2], 10) : NaN;
-    if (isNaN(qrIndex) || qrIndex <= 0) {
-      setScanError(`Nepoznaný QR: ${raw.slice(0, 40)}`);
-      return;
-    }
-
-    // 1) Update qr_label stop_id
-    const { data: qrLabel, error: qrErr } = await supabase
-      .from("oznacnik_qr_labels")
-      .update({ stop_id: stop.stop_id, placed_at: new Date().toISOString() })
-      .eq("qr_index", qrIndex)
-      .select("qr_index, work_id, author_id, label_seq, placed_at")
-      .maybeSingle();
-    if (qrErr) {
-      setScanError(qrErr.message);
-      return;
-    }
-    if (!qrLabel) {
-      setScanError(`QR #${qrIndex} neexistuje v DB`);
-      return;
-    }
-
-    // 2) Spočti nový claim state
-    const sameAuthor = authorId === qrLabel.author_id;
-    const newAuthorId = qrLabel.author_id;
-    const newWorkIds = sameAuthor
-      ? Array.from(new Set([...workIds, qrLabel.work_id]))
-      : [qrLabel.work_id]; // jiný autor → reset works na ten z QR
-
-    // 3) Upsert claim
-    const { error: claimErr } = await supabase
-      .from("oznacnik_claims")
-      .upsert(
-        {
-          stop_id: stop.stop_id,
-          author_id: newAuthorId,
-          work_ids: newWorkIds,
-          notes: notes.trim() || null,
-        },
-        { onConflict: "stop_id" }
-      );
-    if (claimErr) {
-      setScanError(`Claim selhal: ${claimErr.message}`);
-      return;
-    }
-
-    // 4) Update lokální state
-    setAuthorId(newAuthorId);
-    setWorkIds(newWorkIds);
-    setLabelsHere((prev) => {
-      const without = prev.filter((l) => l.qr_index !== qrIndex);
-      return [qrLabel as QrLabelHere, ...without];
-    });
-    setScannerOpen(false);
-  };
-
-  const unlinkLabel = async (qrIndex: number) => {
-    if (!confirm(`Odpárovat popisek #${qrIndex} z této zastávky?`)) return;
-    const { error: upErr } = await supabase
-      .from("oznacnik_qr_labels")
-      .update({ stop_id: null, placed_at: null })
-      .eq("qr_index", qrIndex);
-    if (upErr) {
-      alert(upErr.message);
-      return;
-    }
-    setLabelsHere((prev) => prev.filter((l) => l.qr_index !== qrIndex));
   };
 
   const release = async () => {
@@ -518,212 +448,104 @@ export default function InstallStop({
       {selectedAuthor && (
         <section style={{ padding: 16, background: "#fff", borderBottom: "2px solid #ddd" }}>
           <div style={eyebrow}>
-            Co tady visí · vybráno {workIds.length} z {selectedAuthor.works.length} motivů (kopie OK)
+            Co tady visí · vybráno {pickedQrIndices.size} z {visibleLabels.length} dostupných popisků
           </div>
-          {selectedAuthor.works.length === 0 ? (
+          {loadingPool ? (
             <div style={{ color: "#888", fontSize: 13, fontStyle: "italic" }}>
-              Autor nemá v DB seznam děl. Popiš co tam visí do poznámky níž.
+              Načítám popisky…
+            </div>
+          ) : visibleLabels.length === 0 ? (
+            <div style={{ color: "#888", fontSize: 13, fontStyle: "italic" }}>
+              Žádné volné popisky pro tohoto autora.
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              {selectedAuthor.works.map((w) => {
-                const checked = workIds.includes(w.id);
-                // Kolikrát už je dílo umístěné jinde (mimo aktuální zastávku).
-                // Zahrnujeme i případy kdy je checked = už uložené v existingClaim.
-                const elsewhereCount = (() => {
-                  const total = workPlacements[w.id] ?? 0;
-                  const wasOnThisStop = existingClaim?.work_ids.includes(w.id) ?? false;
-                  return wasOnThisStop ? Math.max(0, total - 1) : total;
-                })();
-                return (
-                  <button
-                    key={w.id}
-                    type="button"
-                    onClick={() => toggleWork(w.id)}
-                    style={{
-                      padding: "12px 14px",
-                      fontFamily: "inherit",
-                      fontSize: 14,
-                      fontWeight: 700,
-                      textAlign: "left",
-                      border: `3px solid ${checked ? "#000" : "#ddd"}`,
-                      background: checked ? "#000" : "#fff",
-                      color: checked ? "#fff" : "#000",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                    }}
-                  >
-                    <span
+              {visibleLabels
+                .slice()
+                .sort((a, b) => {
+                  const wa = selectedAuthor.works.find((w) => w.id === a.work_id);
+                  const wb = selectedAuthor.works.find((w) => w.id === b.work_id);
+                  const orderA = wa?.ord ?? 999;
+                  const orderB = wb?.ord ?? 999;
+                  if (orderA !== orderB) return orderA - orderB;
+                  return a.label_seq - b.label_seq;
+                })
+                .map((lbl) => {
+                  const w = selectedAuthor.works.find((x) => x.id === lbl.work_id);
+                  const checked = pickedQrIndices.has(lbl.qr_index);
+                  return (
+                    <button
+                      key={lbl.qr_index}
+                      type="button"
+                      onClick={() => toggleLabel(lbl.qr_index)}
                       style={{
-                        width: 22,
-                        height: 22,
-                        border: `2px solid ${checked ? "#fff" : "#000"}`,
-                        background: checked ? "#fff" : "transparent",
-                        color: "#000",
+                        padding: "12px 14px",
+                        fontFamily: "inherit",
+                        fontSize: 14,
+                        fontWeight: 700,
+                        textAlign: "left",
+                        border: `3px solid ${checked ? "#000" : "#ddd"}`,
+                        background: checked ? "#000" : "#fff",
+                        color: checked ? "#fff" : "#000",
+                        cursor: "pointer",
                         display: "flex",
                         alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 14,
-                        flexShrink: 0,
+                        gap: 12,
                       }}
                     >
-                      {checked ? "✓" : ""}
-                    </span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ letterSpacing: "-0.01em" }}>
-                        {String(w.ord).padStart(2, "0")} · {w.title}
-                      </div>
-                      {(w.year || w.technique) && (
-                        <div
-                          style={{
-                            fontSize: 11,
-                            fontWeight: 400,
-                            marginTop: 3,
-                            color: checked ? "rgba(255,255,255,0.6)" : "#888",
-                          }}
-                        >
-                          {[w.technique, w.year].filter(Boolean).join(" · ")}
-                        </div>
-                      )}
-                    </div>
-                    {elsewhereCount > 0 && (
                       <span
                         style={{
-                          padding: "4px 8px",
-                          fontSize: 10,
-                          fontWeight: 700,
-                          letterSpacing: "0.08em",
-                          textTransform: "uppercase",
+                          width: 22,
+                          height: 22,
                           border: `2px solid ${checked ? "#fff" : "#000"}`,
-                          background: checked ? "transparent" : "#fff",
-                          color: checked ? "#fff" : "#000",
+                          background: checked ? "#fff" : "transparent",
+                          color: "#000",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize: 14,
                           flexShrink: 0,
-                          whiteSpace: "nowrap",
                         }}
                       >
-                        +{elsewhereCount}× jinde
+                        {checked ? "v" : ""}
                       </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* Použij tyhle popisky (předpřiřazené při CLAIM) */}
-      {selectedAuthor && (
-        <section style={{ padding: 16, background: "#fff", borderBottom: "3px solid #000" }}>
-          <div style={eyebrow}>
-            Nalep tyhle popisky ({labelsHere.length})
-          </div>
-
-          {labelsHere.length > 0 ? (
-            <div
-              className="grid gap-3"
-              style={{ gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" }}
-            >
-              {labelsHere.map((l) => {
-                const work = selectedAuthor.works.find((w) => w.id === l.work_id);
-                return (
-                  <div
-                    key={l.qr_index}
-                    style={{
-                      padding: "16px 12px",
-                      border: "4px solid #000",
-                      background: "#fff",
-                      position: "relative",
-                    }}
-                  >
-                    <div
-                      className="font-black"
-                      style={{
-                        fontSize: "clamp(40px, 12vw, 64px)",
-                        letterSpacing: "-0.05em",
-                        lineHeight: 0.9,
-                        fontFamily: "monospace",
-                      }}
-                    >
-                      #{String(l.qr_index).padStart(3, "0")}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 11,
-                        marginTop: 6,
-                        color: "#444",
-                        fontWeight: 700,
-                      }}
-                    >
-                      {work?.title ?? "—"}
-                    </div>
-                    <button
-                      onClick={() => unlinkLabel(l.qr_index)}
-                      style={{
-                        position: "absolute",
-                        top: 6,
-                        right: 6,
-                        fontSize: 10,
-                        fontWeight: 700,
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                        fontFamily: "inherit",
-                        border: "none",
-                        background: "transparent",
-                        color: "#E3000B",
-                        cursor: "pointer",
-                        padding: 4,
-                      }}
-                    >
-                      ×
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ letterSpacing: "-0.01em" }}>
+                          {w ? `${String(w.ord).padStart(2, "0")} · ${w.title}` : lbl.work_id}
+                        </div>
+                        {w && (w.year || w.technique) && (
+                          <div
+                            style={{
+                              fontSize: 11,
+                              fontWeight: 400,
+                              marginTop: 3,
+                              color: checked ? "rgba(255,255,255,0.6)" : "#888",
+                            }}
+                          >
+                            {[w.technique, w.year].filter(Boolean).join(" · ")}
+                          </div>
+                        )}
+                      </div>
+                      <span
+                        className="font-black"
+                        style={{
+                          padding: "6px 10px",
+                          fontSize: 16,
+                          letterSpacing: "-0.02em",
+                          fontFamily: "monospace",
+                          background: checked ? "#fff" : "#f3f3f3",
+                          color: "#000",
+                          border: `2px solid ${checked ? "#fff" : "#000"}`,
+                          whiteSpace: "nowrap",
+                          flexShrink: 0,
+                        }}
+                        title="QR popisek — najdi v stohu"
+                      >
+                        #{String(lbl.qr_index).padStart(3, "0")}
+                      </span>
                     </button>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div style={{ color: "#888", fontSize: 13, fontStyle: "italic" }}>
-              CLAIM přiřadí konkrétní čísla popisků. Pokud zmáčkneš Rozhodit znova,
-              dostaneš jiná.
-            </div>
-          )}
-
-          {/* Manual scan override — pro případ kdy nalepíš jiný */}
-          <button
-            type="button"
-            onClick={() => setScannerOpen(true)}
-            style={{
-              width: "100%",
-              padding: 12,
-              marginTop: 12,
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              fontFamily: "inherit",
-              border: "2px solid #888",
-              background: "#fff",
-              color: "#888",
-              cursor: "pointer",
-            }}
-          >
-            Override: naskenovat jiný QR
-          </button>
-
-          {scanError && (
-            <div
-              style={{
-                marginTop: 8,
-                padding: 8,
-                border: "2px solid #E3000B",
-                color: "#E3000B",
-                fontSize: 12,
-                fontWeight: 700,
-              }}
-            >
-              {scanError}
+                  );
+                })}
             </div>
           )}
         </section>
@@ -805,13 +627,6 @@ export default function InstallStop({
         </div>
       )}
 
-      {scannerOpen && (
-        <ScannerModal
-          onScan={handleScannedQr}
-          onClose={() => setScannerOpen(false)}
-          onManualEntry={handleScannedQr}
-        />
-      )}
     </div>
   );
 }
@@ -896,149 +711,4 @@ function contrast(bg: string, opacity = 1): string {
   const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   if (lum > 0.55) return opacity < 1 ? `rgba(0,0,0,${opacity})` : "#000";
   return opacity < 1 ? `rgba(255,255,255,${opacity})` : "#fff";
-}
-
-// ── Scanner modal: full-screen kamera + manual fallback ──
-function ScannerModal({
-  onScan,
-  onClose,
-  onManualEntry,
-}: {
-  onScan: (text: string) => void;
-  onClose: () => void;
-  onManualEntry: (text: string) => void;
-}) {
-  const [manualValue, setManualValue] = useState("");
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.95)",
-        zIndex: 1000,
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <div
-        style={{
-          padding: "12px 16px",
-          background: "#000",
-          color: "#fff",
-          borderBottom: "3px solid #E3000B",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <div className="font-black uppercase" style={{ fontSize: 13, letterSpacing: "0.12em" }}>
-          Naskenuj QR popisek
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          style={{
-            background: "transparent",
-            color: "#fff",
-            border: "2px solid #fff",
-            padding: "6px 12px",
-            fontSize: 12,
-            fontWeight: 700,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            fontFamily: "inherit",
-            cursor: "pointer",
-          }}
-        >
-          Zavřít
-        </button>
-      </div>
-
-      <div style={{ flex: 1, position: "relative", overflow: "hidden", background: "#000" }}>
-        <QrScanner
-          onScan={(results) => {
-            const text = results?.[0]?.rawValue;
-            if (text) onScan(text);
-          }}
-          onError={(err) => {
-            console.error("[scanner]", err);
-          }}
-          constraints={{ facingMode: "environment" }}
-          styles={{
-            container: { width: "100%", height: "100%" },
-            video: { width: "100%", height: "100%", objectFit: "cover" },
-          }}
-        />
-      </div>
-
-      <div
-        style={{
-          padding: 14,
-          background: "#000",
-          borderTop: "3px solid #E3000B",
-          color: "#fff",
-        }}
-      >
-        <div
-          style={{
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            color: "#888",
-            marginBottom: 6,
-          }}
-        >
-          Nebo zadej číslo ručně
-        </div>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            value={manualValue}
-            onChange={(e) => setManualValue(e.target.value.replace(/[^0-9]/g, ""))}
-            placeholder="napr. 3"
-            style={{
-              flex: 1,
-              padding: "10px 12px",
-              border: "2px solid #fff",
-              background: "#000",
-              color: "#fff",
-              fontFamily: "monospace",
-              fontSize: 18,
-              fontWeight: 700,
-              outline: "none",
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => {
-              if (manualValue) {
-                onManualEntry(manualValue);
-                setManualValue("");
-              }
-            }}
-            disabled={!manualValue}
-            style={{
-              padding: "10px 16px",
-              fontSize: 12,
-              fontWeight: 700,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              fontFamily: "inherit",
-              border: "2px solid #E3000B",
-              background: "#E3000B",
-              color: "#fff",
-              cursor: manualValue ? "pointer" : "not-allowed",
-              opacity: manualValue ? 1 : 0.4,
-            }}
-          >
-            Spárovat
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }

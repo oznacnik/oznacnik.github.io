@@ -39,7 +39,25 @@ interface ManualAuthor {
   requested_stops?: number;
   works: { ord: number; title: string; year?: number; technique?: string }[];
 }
-const MANUAL_AUTHORS: ManualAuthor[] = [];
+// Nela & Vavrečka byli na SKIP listu (chyběla jim data v CSV). Přidáváme je
+// jako manuál s placeholderem dílem, ať jim algoritmus vygeneruje QR popisky.
+// Mají popisek_consent=false → labels budou blank ("GALERIE OZNAČNÍK").
+const MANUAL_AUTHORS: ManualAuthor[] = [
+  {
+    id: "nela",
+    name: "Nela",
+    requested_stops: 1,
+    works: [{ ord: 1, title: "zajíc" }],
+    notes: "Z CSV jen 'zajíc' (neparsovatelné jako numerický seznam)",
+  },
+  {
+    id: "vavrecka",
+    name: "Vavrečka",
+    requested_stops: 10,
+    works: [{ ord: 1, title: "(bez názvu)" }],
+    notes: "CSV bez seznamu děl, jen 10 zast. / 20 kopií",
+  },
+];
 
 // ── Minimalistický CSV parser (umí quoted cells s escaped quotes) ─────
 function parseCsv(text: string): string[][] {

@@ -140,18 +140,22 @@ async function ensureLabels(): Promise<QrLabel[]> {
 // ─── PDF render ───────────────────────────────────────────────────────
 
 // Label size: 80 × 40 mm landscape (uživatelská spec). Na A4 (210 × 297 mm)
-// se vleze 2 × 7 = 14 labelů s ~20mm bočním paddingem a ~3mm na vrchu/spodku.
-// react-pdf používá body (1mm = 2.83 pt).
+// se vleze 2 × 6 = 12 labelů. Border + řezání = potřebujeme rezervu;
+// 7 řad pretékal a react-pdf paginal s blank pages mezi.
+// react-pdf body units: 1mm = 2.83465 pt.
 const MM = 2.83465;
+const BORDER = 1.5;
 const LABEL_W = 80 * MM;
 const LABEL_H = 40 * MM;
+const SLOT_W = LABEL_W + BORDER * 2; // skutečně zabraný prostor s borderem
+const SLOT_H = LABEL_H + BORDER * 2;
 const COLS = 2;
-const ROWS = 7;
-const LABELS_PER_PAGE = COLS * ROWS; // 14
+const ROWS = 6;
+const LABELS_PER_PAGE = COLS * ROWS; // 12
 const PAGE_W = 210 * MM;
 const PAGE_H = 297 * MM;
-const SIDE_PADDING = (PAGE_W - COLS * LABEL_W) / 2;
-const TOP_PADDING = (PAGE_H - ROWS * LABEL_H) / 2;
+const SIDE_PADDING = Math.max(0, (PAGE_W - COLS * SLOT_W) / 2);
+const TOP_PADDING = Math.max(0, (PAGE_H - ROWS * SLOT_H) / 2);
 
 const s = StyleSheet.create({
   page: {
@@ -165,17 +169,16 @@ const s = StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    width: COLS * LABEL_W,
-    height: ROWS * LABEL_H,
+    width: COLS * SLOT_W,
+    height: ROWS * SLOT_H,
   },
   label: {
     width: LABEL_W,
     height: LABEL_H,
-    border: "1.5pt solid #000",
+    border: `${BORDER}pt solid #000`,
     flexDirection: "row",
     padding: 6,
     gap: 6,
-    boxSizing: "border-box",
   },
   textCol: {
     flex: 1,

@@ -106,19 +106,34 @@ export default function InstallList({
           <div className="font-black uppercase" style={{ letterSpacing: "0.12em", fontSize: 12 }}>
             Vernisáž
           </div>
-          <Link
-            href={`/scouting/${token}/install/authors`}
-            className="font-black uppercase no-underline"
-            style={{
-              fontSize: 11,
-              letterSpacing: "0.12em",
-              color: "#fff",
-              border: "2px solid #fff",
-              padding: "4px 8px",
-            }}
-          >
-            Autoři
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href={`/scouting/${token}/install/scans`}
+              className="font-black uppercase no-underline"
+              style={{
+                fontSize: 11,
+                letterSpacing: "0.12em",
+                color: "#fff",
+                border: "2px solid #fff",
+                padding: "4px 8px",
+              }}
+            >
+              Scany
+            </Link>
+            <Link
+              href={`/scouting/${token}/install/authors`}
+              className="font-black uppercase no-underline"
+              style={{
+                fontSize: 11,
+                letterSpacing: "0.12em",
+                color: "#fff",
+                border: "2px solid #fff",
+                padding: "4px 8px",
+              }}
+            >
+              Autoři
+            </Link>
+          </div>
         </div>
 
         <input

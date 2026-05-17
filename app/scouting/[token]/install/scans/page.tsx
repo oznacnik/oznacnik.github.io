@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { assertToken, fetchStopsWithAnnotations } from "@/lib/scouting";
-import { fetchAuthors, fetchWorks } from "@/lib/install";
+import { fetchAuthors, fetchClaims, fetchWorks } from "@/lib/install";
 import { supabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +22,6 @@ interface LabelRow {
   qr_index: number;
   work_id: string;
   author_id: string;
-  stop_id: string | null;
 }
 
 export default async function ScansPage({
@@ -33,12 +32,13 @@ export default async function ScansPage({
   const { token } = await params;
   assertToken(token);
 
-  const [stops, authors, works, scansRes, labelsRes] = await Promise.all([
+  const [stops, authors, works, claims, scansRes, labelsRes] = await Promise.all([
     fetchStopsWithAnnotations(),
     fetchAuthors(),
     fetchWorks(),
+    fetchClaims(),
     supabase.from("oznacnik_qr_scans").select("*").order("scanned_at", { ascending: false }),
-    supabase.from("oznacnik_qr_labels").select("qr_index, work_id, author_id, stop_id"),
+    supabase.from("oznacnik_qr_labels").select("qr_index, work_id, author_id"),
   ]);
 
   const scans = (scansRes.data ?? []) as ScanRow[];
@@ -49,15 +49,35 @@ export default async function ScansPage({
   const authorById = new Map(authors.map((a) => [a.id, a]));
   const workById = new Map(works.map((w) => [w.id, w]));
 
+  // Mapa work_id → seznam stop_id, kde to dílo visí (z claimů)
+  const stopsByWork = new Map<string, string[]>();
+  for (const c of claims) {
+    for (const wid of c.work_ids) {
+      if (!stopsByWork.has(wid)) stopsByWork.set(wid, []);
+      stopsByWork.get(wid)!.push(c.stop_id);
+    }
+  }
+
   // ── Agregace ─────────────────────────────────────────────────────────
+  // Per-QR (= per-work) je přesné. Per-stop je rozdělený proporcionálně:
+  // pokud dílo visí na N zastávkách, každý scan se připočítá k těmto N
+  // jako 1/N (přibližné — nelze přesněji bez informace o sken-pozici).
   const scansByQr = new Map<number, number>();
-  const scansByStop = new Map<string, number>();
   const scansByAuthor = new Map<string, number>();
+  const scansByStop = new Map<string, number>();
   for (const s of scans) {
     const label = labelById.get(s.qr_index);
     scansByQr.set(s.qr_index, (scansByQr.get(s.qr_index) ?? 0) + 1);
-    if (label?.stop_id) scansByStop.set(label.stop_id, (scansByStop.get(label.stop_id) ?? 0) + 1);
-    if (label?.author_id) scansByAuthor.set(label.author_id, (scansByAuthor.get(label.author_id) ?? 0) + 1);
+    if (label?.author_id) {
+      scansByAuthor.set(label.author_id, (scansByAuthor.get(label.author_id) ?? 0) + 1);
+    }
+    if (label) {
+      const workStops = stopsByWork.get(label.work_id) ?? [];
+      const share = workStops.length > 0 ? 1 / workStops.length : 0;
+      for (const stopId of workStops) {
+        scansByStop.set(stopId, (scansByStop.get(stopId) ?? 0) + share);
+      }
+    }
   }
 
   const topStops = [...scansByStop.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20);
@@ -70,9 +90,10 @@ export default async function ScansPage({
     return Date.now() - t < 24 * 60 * 60 * 1000;
   });
 
-  // Labels stav: kolik je pre-printed vs spárováno vs scanned
   const totalLabels = labels.length;
-  const pairedLabels = labels.filter((l) => l.stop_id).length;
+  const claimedWorks = new Set<string>();
+  for (const c of claims) for (const w of c.work_ids) claimedWorks.add(w);
+  const labelsOnSomeStop = labels.filter((l) => claimedWorks.has(l.work_id)).length;
   const scannedAtLeastOnce = scansByQr.size;
 
   return (
@@ -119,7 +140,7 @@ export default async function ScansPage({
         <BigNum label="Unikátních QR" value={scannedAtLeastOnce} />
         <BigNum
           label="Spárovaných labels"
-          value={pairedLabels}
+          value={labelsOnSomeStop}
           sub={`z ${totalLabels} vytištěných`}
         />
       </section>
@@ -164,8 +185,9 @@ export default async function ScansPage({
                       fontSize: 22,
                       letterSpacing: "-0.02em",
                     }}
+                    title="Přibližný počet — scany se rozdělují proporcionálně mezi zastávky kde dílo visí"
                   >
-                    {count}
+                    ~{Math.round(count * 10) / 10}
                   </span>
                 </li>
               );
@@ -216,7 +238,13 @@ export default async function ScansPage({
             {topQrs.map(([qrIndex, count]) => {
               const label = labelById.get(qrIndex);
               const work = label ? workById.get(label.work_id) : null;
-              const stop = label?.stop_id ? stopById.get(label.stop_id) : null;
+              const workStops = label ? (stopsByWork.get(label.work_id) ?? []) : [];
+              const stopNames = workStops
+                .map((sid) => stopById.get(sid)?.stop_name)
+                .filter(Boolean)
+                .slice(0, 3)
+                .join(", ");
+              const stopHint = workStops.length > 3 ? `${stopNames}, +${workStops.length - 3}` : stopNames;
               const author = label ? authorById.get(label.author_id) : null;
               return (
                 <li
@@ -240,8 +268,8 @@ export default async function ScansPage({
                     <span style={{ flex: 1, fontSize: 13 }}>
                       <strong>{work?.title ?? "?"}</strong>{" "}
                       <span style={{ color: "#888" }}>· {author?.name ?? "?"}</span>{" "}
-                      {stop && (
-                        <span style={{ color: "#aaa" }}>· {stop.stop_name}</span>
+                      {stopHint && (
+                        <span style={{ color: "#aaa" }}>· {stopHint}</span>
                       )}
                     </span>
                     <span className="font-black" style={{ fontSize: 18 }}>
@@ -264,8 +292,13 @@ export default async function ScansPage({
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {scans.slice(0, 30).map((s) => {
               const label = labelById.get(s.qr_index);
-              const stop = label?.stop_id ? stopById.get(label.stop_id) : null;
               const work = label ? workById.get(label.work_id) : null;
+              const workStops = label ? (stopsByWork.get(label.work_id) ?? []) : [];
+              const stopsLine = workStops
+                .map((sid) => stopById.get(sid)?.stop_name)
+                .filter(Boolean)
+                .slice(0, 2)
+                .join(", ");
               const t = new Date(s.scanned_at);
               return (
                 <li
@@ -290,7 +323,7 @@ export default async function ScansPage({
                     </span>
                     <span style={{ flex: 1, color: "#444" }}>
                       {work?.title ?? "?"}
-                      {stop && <span style={{ color: "#aaa" }}> @ {stop.stop_name}</span>}
+                      {stopsLine && <span style={{ color: "#aaa" }}> @ {stopsLine}{workStops.length > 2 ? "…" : ""}</span>}
                     </span>
                   </div>
                 </li>

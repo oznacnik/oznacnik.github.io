@@ -549,13 +549,15 @@ async function buildLabelData(labels: QrLabel[]): Promise<LabelData[]> {
       color: { dark: "#000000", light: "#ffffff" },
     });
 
-    // Limit tak, aby se titul nezalomil přes řádek autora.
-    // ~75 znaků = bezpečně 1 řádek při 13pt na ~470pt šířce.
+    // Titul nepre-truncatovat — auto-fit logika v `fitTitle` si poradí
+    // s libovolnou délkou (vybere fontSize + počet řádků). Sanitizujeme
+    // jen whitespace (jeden řádek místo víc) přes nfc + odstranění \n.
+    const cleanTitle = nfc(w.title).replace(/\s+/g, " ").trim();
     out.push({
       qr_index: l.qr_index,
       blank: !a.popisek_consent,
       authorName: truncate(nfc(displayAuthor(a)), 48),
-      workTitle: truncate(nfc(w.title), 75),
+      workTitle: cleanTitle,
       workTech: w.technique ? truncate(nfc(w.technique), 65) : null,
       workYear: w.year ? String(w.year) : null,
       qrDataUrl,

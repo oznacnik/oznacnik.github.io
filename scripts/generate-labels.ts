@@ -232,9 +232,12 @@ const RIGHT_BLOCK_RIGHT = 10;
 const TEXT_RIGHT_LIMIT = LABEL_W_PT - RIGHT_BLOCK_WIDTH - RIGHT_BLOCK_RIGHT - 8;
 const LEFT_TEXT_WIDTH = TEXT_RIGHT_LIMIT - TEXT_X;
 
-const TITLE_TOP = 14;
-const AUTHOR_TOP = 46;
-const GALLERY_BRAND_TOP = 84; // pod QR/title rowem, pořád v CONTENT zóně
+// Posuv nahoru proti SVG, aby vizuální top titulu lícoval s top QR.
+// Absolute `top` v react-pdf sedí na hlavní line-box (vč. font ascent),
+// takže glyph CAVECANEM působí níž než hodnota `top`.
+const TITLE_TOP = 4;
+const AUTHOR_TOP = 36;
+const GALLERY_BRAND_TOP = 76; // hned pod QR (QR_Y + QR_SIZE = 72)
 const GALLERY_BRAND_LEFT = QR_X; // začíná pod QR, ne pod textem
 
 const s = StyleSheet.create({
@@ -280,15 +283,6 @@ const s = StyleSheet.create({
     fontSize: 17,
     fontWeight: 700,
     color: "#000",
-  },
-  workTech: {
-    position: "absolute",
-    left: TEXT_X,
-    top: AUTHOR_TOP + 22,
-    width: LEFT_TEXT_WIDTH,
-    fontSize: 10,
-    fontWeight: 400,
-    color: "#555",
   },
   qrIndex: {
     position: "absolute",
@@ -363,10 +357,12 @@ function chunk<T>(arr: T[], size: number): T[][] {
 
 function Label({ l }: { l: LabelData }) {
   const indexLabel = `#${String(l.qr_index).padStart(3, "0")}`;
-  const rightBlock = [
+  // Common right column (ID + URL) je všude. „Galerie Označník" big
+  // row pod QR se renderuje JEN pro normální popisky — blank labely
+  // už mají GALERIE OZNAČNÍK velký místo titulu díla, neopakovat.
+  const idAndUrl = [
     React.createElement(Text, { style: s.urlText, key: "url" }, PRINTED_HOSTNAME),
     React.createElement(Text, { style: s.qrIndex, key: "idx" }, indexLabel),
-    React.createElement(Text, { style: s.galleryBrand, key: "brand" }, "Galerie Označník"),
   ];
   if (l.blank) {
     return React.createElement(
@@ -375,9 +371,10 @@ function Label({ l }: { l: LabelData }) {
       React.createElement(Image, { style: s.qrImage, src: l.qrDataUrl }),
       React.createElement(Text, { style: s.blankBigTitle }, "GALERIE OZNAČNÍK"),
       React.createElement(Text, { style: s.blankSub }, "Vernisáž 2026"),
-      ...rightBlock
+      ...idAndUrl
     );
   }
+  // Technika na popisek nepatří — jen na web. Year zůstává v titulu.
   const titleLine = [l.workTitle, l.workYear].filter(Boolean).join(" / ");
   return React.createElement(
     View,
@@ -393,13 +390,8 @@ function Label({ l }: { l: LabelData }) {
       { style: [s.authorName, { fontFamily: fontFor(l.authorName) }] },
       l.authorName
     ),
-    l.workTech &&
-      React.createElement(
-        Text,
-        { style: [s.workTech, { fontFamily: fontFor(l.workTech) }] },
-        l.workTech
-      ),
-    ...rightBlock
+    React.createElement(Text, { style: s.galleryBrand }, "Galerie Označník"),
+    ...idAndUrl
   );
 }
 

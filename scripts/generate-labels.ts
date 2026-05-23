@@ -79,17 +79,25 @@ function isCJKChar(c: string): boolean {
   return CJK_RE.test(c);
 }
 
-// Auto-shrink titulu když je dlouhý. CJK znaky jsou prakticky 2× širší
-// než Latin, tak je počítáme dvojnásobně. Default fontSize 22 funguje
-// do ~22 „latin-ekvivalent" znaků; pak skáčeme dolů.
-function scaledTitleFontSize(text: string): number {
+// Auto-fit titulu: najde největší fontSize, kde se celý text vejde do
+// 1 řádku v dostupné šířce LEFT_TEXT_WIDTH. CJK znaky cca 2× širší než
+// Latin (počítají se s váhou 2). Když ani 7pt nestačí, truncate.
+const TITLE_FONT_TIERS = [22, 18, 14, 11, 9, 7];
+// Empirický šířkový ratio pro Inter bold uppercase. Trochu konzervativní,
+// aby se text nedotýkal pravého bloku.
+const AVG_CHAR_W_RATIO = 0.62;
+
+function fitTitle(text: string, maxWidth: number): { text: string; fontSize: number } {
   let weight = 0;
   for (const ch of text) weight += isCJKChar(ch) ? 2 : 1;
-  if (weight <= 22) return 22;
-  if (weight <= 30) return 18;
-  if (weight <= 42) return 14;
-  if (weight <= 60) return 11;
-  return 9;
+  for (const size of TITLE_FONT_TIERS) {
+    const fit = Math.floor(maxWidth / (size * AVG_CHAR_W_RATIO));
+    if (weight <= fit) return { text, fontSize: size };
+  }
+  // Ani na nejmenší velikost se nevejde → truncate
+  const size = TITLE_FONT_TIERS[TITLE_FONT_TIERS.length - 1];
+  const maxCh = Math.floor(maxWidth / (size * AVG_CHAR_W_RATIO)) - 1;
+  return { text: truncate(text, maxCh), fontSize: size };
 }
 
 // Rozdělí text na souvislé chunky stejného scriptu. Latin chunky pak
@@ -421,15 +429,17 @@ function Label({ l }: { l: LabelData }) {
       ...idAndUrl
     );
   }
-  // Technika na popisek nepatří — jen na web. Year zůstává v titulu.
-  const titleLine = [l.workTitle, l.workYear].filter(Boolean).join(" / ");
-  const titleFontSize = scaledTitleFontSize(titleLine);
+  // Year + technika jen na webu, na popisku zbytečně tlačí na šířku.
+  const { text: fittedTitle, fontSize: titleFontSize } = fitTitle(
+    l.workTitle,
+    LEFT_TEXT_WIDTH
+  );
   return React.createElement(
     View,
     { style: s.label },
     React.createElement(Image, { style: s.qrImage, src: l.qrDataUrl }),
     multiScriptText(
-      titleLine,
+      fittedTitle,
       [s.workTitle, { fontSize: titleFontSize }],
       "title"
     ),

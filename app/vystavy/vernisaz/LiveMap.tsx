@@ -83,21 +83,22 @@ export default function LiveMap({
       await import("maplibre-gl/dist/maplibre-gl.css");
       const map = new maplibre.Map({
         container: mapRef.current!,
-        style: "https://tiles.openfreemap.org/styles/liberty",
+        // Positron je světlý monochromatický styl, drží kontrast i bez
+        // grayscale filtru a Liberty občas vychází úplně bíle.
+        style: "https://tiles.openfreemap.org/styles/positron",
         center: [14.42, 50.075],
         zoom: 11,
-        minZoom: 10,
-        maxZoom: 13,
-        dragRotate: false,
-        pitchWithRotate: false,
+        // Žádná interakce — mapa je čistě informativní (státicky ukazuje
+        // claimnuté zastávky), žádný zoom/scroll/pan/rotace.
+        interactive: false,
         attributionControl: false,
       }) as unknown as MapInstance;
       mapInstance.current = map;
 
       const draw = () => drawMarkers();
       map.on("load", draw);
-      map.on("move", draw);
-      map.on("zoom", draw);
+      // Při interactive:false se „move/zoom" neemitují, ale resize ano
+      // (responsive layout). To stačí na re-pozicování markerů.
       map.on("resize", draw);
     };
     init();
@@ -148,7 +149,6 @@ export default function LiveMap({
         style={{
           position: "absolute",
           inset: 0,
-          filter: "grayscale(1) contrast(1.08)",
         }}
       />
       <div

@@ -206,16 +206,21 @@ const PAGE_W_PT = 210 * MM; // ~595.28
 const PAGE_H_PT = 297 * MM; // ~841.89
 const SIDE_PADDING = 8; // ~3mm okraj na každé straně (safe printable area)
 const LABEL_W_PT = PAGE_W_PT - SIDE_PADDING * 2; // ~579
-const PAGE_PADDING_V = 10;
-// Popisek = horní content zóna (108pt podle SVG) + 3cm prázdná plocha
-// dole UVNITŘ rámečku. Ten prostor je pro ruční značení / odlomení /
-// vlepení do reklamního rámu, nebo prostě klidová zóna.
+// Popisek = horní content zóna (108pt podle SVG) + 2cm prázdná plocha
+// dole UVNITŘ rámečku. Spodní zóna je pro ruční značení / odlomení /
+// vlepení do reklamního rámu, nebo klidová zóna.
 const CONTENT_H_PT = 108.04;
-const BOTTOM_NOTES_PT = 30 * MM; // 3 cm
-const LABEL_H_PT = CONTENT_H_PT + BOTTOM_NOTES_PT; // ~193
+const BOTTOM_NOTES_PT = 20 * MM; // 2 cm = ~56.7pt
+const LABEL_H_PT = CONTENT_H_PT + BOTTOM_NOTES_PT; // ~164.7
 const BORDER = 1;
-// 4 × 193 = 772pt; do 842 − 20 padding = 822pt se vejdou pohodlně 4.
-const LABELS_PER_PAGE = 4;
+
+// Dvě varianty (vždy se generují obě, user si vybere):
+//   4/strana: pohodlný layout, hodně místa kolem (10pt page padding)
+//   5/strana: hustější, menší page padding aby 5×164.7=823.5pt fitlo do 842pt
+const VARIANTS = [
+  { perPage: 4, pagePadV: 10 },
+  { perPage: 5, pagePadV: 5 },
+];
 
 // Layout per label.png: QR vlevo nahoře (menší než předtím), vpravo od
 // QR velký uppercase TITLE + pod ním bold AUTHOR. Pod celým horním
@@ -240,15 +245,18 @@ const AUTHOR_TOP = 36;
 const GALLERY_BRAND_TOP = 76; // hned pod QR (QR_Y + QR_SIZE = 72)
 const GALLERY_BRAND_LEFT = QR_X; // začíná pod QR, ne pod textem
 
-const s = StyleSheet.create({
-  page: {
+function makePageStyle(padV: number) {
+  return {
     fontFamily: "Inter",
     backgroundColor: "#fff",
-    paddingTop: PAGE_PADDING_V,
-    paddingBottom: PAGE_PADDING_V,
+    paddingTop: padV,
+    paddingBottom: padV,
     paddingLeft: SIDE_PADDING,
     paddingRight: SIDE_PADDING,
-  },
+  };
+}
+
+const s = StyleSheet.create({
   label: {
     width: LABEL_W_PT,
     height: LABEL_H_PT,
@@ -395,15 +403,24 @@ function Label({ l }: { l: LabelData }) {
   );
 }
 
-function LabelsDocument({ labels }: { labels: LabelData[] }) {
-  const pages = chunk(labels, LABELS_PER_PAGE);
+function LabelsDocument({
+  labels,
+  perPage,
+  pagePadV,
+}: {
+  labels: LabelData[];
+  perPage: number;
+  pagePadV: number;
+}) {
+  const pages = chunk(labels, perPage);
+  const pageStyle = makePageStyle(pagePadV);
   return React.createElement(
     Document,
     { title: "Galerie Označník — QR popisky" },
     pages.map((pageLabels, pi) =>
       React.createElement(
         Page,
-        { size: "A4", orientation: "portrait", style: s.page, key: pi },
+        { size: "A4", orientation: "portrait", style: pageStyle, key: pi },
         pageLabels.map((l) =>
           React.createElement(Label, { l, key: l.qr_index })
         )
@@ -459,17 +476,27 @@ async function main() {
   console.log("Generuji QR kódy + sestavuji label data…");
   const data = await buildLabelData(labels);
 
-  console.log(`Renderuju PDF (${Math.ceil(data.length / LABELS_PER_PAGE)} stránek)…`);
   const outDir = path.join(process.cwd(), "backups");
   fs.mkdirSync(outDir, { recursive: true });
   const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-  const outPath = path.join(outDir, `qr-labels-${ts}.pdf`);
 
-  // @ts-expect-error - renderToFile akceptuje DocumentElement
-  await renderToFile(React.createElement(LabelsDocument, { labels: data }), outPath);
+  for (const v of VARIANTS) {
+    const pages = Math.ceil(data.length / v.perPage);
+    console.log(`Renderuju ${v.perPage}/strana (${pages} stránek)…`);
+    const outPath = path.join(outDir, `qr-labels-${v.perPage}perpage-${ts}.pdf`);
+    await renderToFile(
+      // @ts-expect-error - renderToFile akceptuje DocumentElement
+      React.createElement(LabelsDocument, {
+        labels: data,
+        perPage: v.perPage,
+        pagePadV: v.pagePadV,
+      }),
+      outPath
+    );
+    console.log(`  → ${outPath}`);
+  }
 
-  console.log(`\n✓ ${data.length} popisků`);
-  console.log(`  → ${outPath}`);
+  console.log(`\n✓ ${data.length} popisků (2 varianty)`);
   console.log(`  QR target: ${SITE_URL}/qr/{index}`);
 }
 

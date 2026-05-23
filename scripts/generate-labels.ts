@@ -79,24 +79,35 @@ function isCJKChar(c: string): boolean {
   return CJK_RE.test(c);
 }
 
-// Auto-fit titulu: najde největší fontSize, kde se celý text vejde do
-// 1 řádku v dostupné šířce LEFT_TEXT_WIDTH. CJK znaky cca 2× širší než
-// Latin (počítají se s váhou 2). Když ani 7pt nestačí, truncate.
-const TITLE_FONT_TIERS = [22, 18, 14, 11, 9, 7];
-// Empirický šířkový ratio pro Inter bold uppercase. Trochu konzervativní,
+// Auto-fit titulu — preferuj 1 řádek, ale když nestačí ani nejmenší
+// rozumný font, povol 2 řádky (max). Velké fonty (22/18) na 2 řádky
+// nepouštíme, protože by lezly do řádku autora.
+const TITLE_FONT_TIERS = [22, 18, 14, 11, 9];
+const TITLE_TWO_LINE_TIERS = [14, 11, 9]; // 2-line povolen jen pro tyhle
+// Empirický šířkový ratio pro Inter bold uppercase. Konzervativní,
 // aby se text nedotýkal pravého bloku.
 const AVG_CHAR_W_RATIO = 0.62;
 
-function fitTitle(text: string, maxWidth: number): { text: string; fontSize: number } {
+function fitTitle(
+  text: string,
+  maxWidth: number
+): { text: string; fontSize: number } {
   let weight = 0;
   for (const ch of text) weight += isCJKChar(ch) ? 2 : 1;
+
+  // Pass 1: 1-line, od největšího fontu
   for (const size of TITLE_FONT_TIERS) {
-    const fit = Math.floor(maxWidth / (size * AVG_CHAR_W_RATIO));
-    if (weight <= fit) return { text, fontSize: size };
+    const lineFit = Math.floor(maxWidth / (size * AVG_CHAR_W_RATIO));
+    if (weight <= lineFit) return { text, fontSize: size };
   }
-  // Ani na nejmenší velikost se nevejde → truncate
-  const size = TITLE_FONT_TIERS[TITLE_FONT_TIERS.length - 1];
-  const maxCh = Math.floor(maxWidth / (size * AVG_CHAR_W_RATIO)) - 1;
+  // Pass 2: 2-line, od největšího povoleného fontu pro 2 řádky
+  for (const size of TITLE_TWO_LINE_TIERS) {
+    const lineFit = Math.floor(maxWidth / (size * AVG_CHAR_W_RATIO));
+    if (weight <= 2 * lineFit) return { text, fontSize: size };
+  }
+  // Last resort: nejmenší 2-line font + truncate
+  const size = TITLE_TWO_LINE_TIERS[TITLE_TWO_LINE_TIERS.length - 1];
+  const maxCh = Math.floor(maxWidth / (size * AVG_CHAR_W_RATIO)) * 2 - 1;
   return { text: truncate(text, maxCh), fontSize: size };
 }
 
@@ -251,15 +262,17 @@ const MM = 2.83465;
 // A4 portrait — užší stránka, aby šly popisky tisknout normálně.
 const PAGE_W_PT = 210 * MM; // ~595.28
 const PAGE_H_PT = 297 * MM; // ~841.89
-const SIDE_PADDING = 8; // ~3mm okraj na každé straně (safe printable area)
-const LABEL_W_PT = PAGE_W_PT - SIDE_PADDING * 2; // ~579
+const SIDE_PADDING = 16; // ~5.6 mm okraj — větší prostor po stranách
+const LABEL_W_PT = PAGE_W_PT - SIDE_PADDING * 2; // ~563
 // Popisek = horní content zóna (108pt podle SVG) + 2cm prázdná plocha
 // dole UVNITŘ rámečku. Spodní zóna je pro ruční značení / odlomení /
 // vlepení do reklamního rámu, nebo klidová zóna.
 const CONTENT_H_PT = 108.04;
 const BOTTOM_NOTES_PT = 20 * MM; // 2 cm = ~56.7pt
 const LABEL_H_PT = CONTENT_H_PT + BOTTOM_NOTES_PT; // ~164.7
-const BORDER = 1;
+// 0.5pt border — mezi dvěma sousedícími popisky je dohromady 1pt
+// (bottom labelu N + top labelu N+1).
+const BORDER = 0.5;
 
 // Dvě varianty (vždy se generují obě, user si vybere):
 //   4/strana: pohodlný layout, hodně místa kolem (10pt page padding)
@@ -279,7 +292,7 @@ const QR_X = 10;
 const QR_Y = 12;
 
 const TEXT_X = QR_X + QR_SIZE + 14; // levá hrana titulu / autora
-const RIGHT_BLOCK_WIDTH = 165; // dost široký na „oznacnik-github-io.vercel.app" na 1 řádek
+const RIGHT_BLOCK_WIDTH = 150; // ⁓ „oznacnik-github-io.vercel.app" na 1 řádek při 9pt
 const RIGHT_BLOCK_RIGHT = 10;
 const TEXT_RIGHT_LIMIT = LABEL_W_PT - RIGHT_BLOCK_WIDTH - RIGHT_BLOCK_RIGHT - 8;
 const LEFT_TEXT_WIDTH = TEXT_RIGHT_LIMIT - TEXT_X;

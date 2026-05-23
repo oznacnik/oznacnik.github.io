@@ -217,19 +217,25 @@ const BORDER = 1;
 // 4 × 193 = 772pt; do 842 − 20 padding = 822pt se vejdou pohodlně 4.
 const LABELS_PER_PAGE = 4;
 
-// QR čtverec — zvětšený o 30 % oproti SVG (51.02 → 66.33),
-// vertikálně vycentrovaný v horní content zóně.
-const QR_SIZE = 51.02 * 1.3;
-const QR_X = 12;
-const QR_Y = (CONTENT_H_PT - QR_SIZE) / 2;
+// Layout per label.png: QR vlevo nahoře (menší než předtím), vpravo od
+// QR velký uppercase TITLE + pod ním bold AUTHOR. Pod celým horním
+// blokem (na novém řádku přes celou šířku) velký „GALERIE OZNAČNÍK".
+// Vpravo nahoře: #NNN bold velký + pod ním URL (drobné, gray, jeden
+// řádek pokud možno).
+const QR_SIZE = 60;
+const QR_X = 10;
+const QR_Y = 12;
 
-// Levý textový sloupec (title / author / technique). Pravý sloupec
-// (ID, URL, brand) je zarovnaný k pravému okraji label boxu.
-const TEXT_X = QR_X + QR_SIZE + 12;
-const RIGHT_BLOCK_WIDTH = 90;
+const TEXT_X = QR_X + QR_SIZE + 14; // levá hrana titulu / autora
+const RIGHT_BLOCK_WIDTH = 165; // dost široký na „oznacnik-github-io.vercel.app" na 1 řádek
 const RIGHT_BLOCK_RIGHT = 10;
 const TEXT_RIGHT_LIMIT = LABEL_W_PT - RIGHT_BLOCK_WIDTH - RIGHT_BLOCK_RIGHT - 8;
 const LEFT_TEXT_WIDTH = TEXT_RIGHT_LIMIT - TEXT_X;
+
+const TITLE_TOP = 14;
+const AUTHOR_TOP = 46;
+const GALLERY_BRAND_TOP = 84; // pod QR/title rowem, pořád v CONTENT zóně
+const GALLERY_BRAND_LEFT = QR_X; // začíná pod QR, ne pod textem
 
 const s = StyleSheet.create({
   page: {
@@ -257,26 +263,28 @@ const s = StyleSheet.create({
   workTitle: {
     position: "absolute",
     left: TEXT_X,
-    top: 12,
+    top: TITLE_TOP,
     width: LEFT_TEXT_WIDTH,
-    fontSize: 13,
-    fontWeight: 400,
-    lineHeight: 1.2,
+    fontSize: 22,
+    fontWeight: 700,
+    letterSpacing: -0.2,
+    lineHeight: 1.05,
+    textTransform: "uppercase",
     color: "#000",
   },
   authorName: {
     position: "absolute",
     left: TEXT_X,
-    top: 50,
+    top: AUTHOR_TOP,
     width: LEFT_TEXT_WIDTH,
-    fontSize: 12,
+    fontSize: 17,
     fontWeight: 700,
     color: "#000",
   },
   workTech: {
     position: "absolute",
     left: TEXT_X,
-    top: 72,
+    top: AUTHOR_TOP + 22,
     width: LEFT_TEXT_WIDTH,
     fontSize: 10,
     fontWeight: 400,
@@ -285,54 +293,53 @@ const s = StyleSheet.create({
   qrIndex: {
     position: "absolute",
     right: RIGHT_BLOCK_RIGHT,
-    top: 12,
+    top: TITLE_TOP,
     width: RIGHT_BLOCK_WIDTH,
-    fontSize: 14,
+    fontSize: 22,
     fontWeight: 700,
-    letterSpacing: 0.6,
+    letterSpacing: 0.4,
     color: "#000",
     textAlign: "right",
   },
   urlText: {
     position: "absolute",
     right: RIGHT_BLOCK_RIGHT,
-    top: 32,
+    top: AUTHOR_TOP + 4,
     width: RIGHT_BLOCK_WIDTH,
-    fontSize: 7,
+    fontSize: 9,
     fontWeight: 400,
     color: "#666",
     textAlign: "right",
   },
   galleryBrand: {
     position: "absolute",
-    right: RIGHT_BLOCK_RIGHT,
-    top: CONTENT_H_PT - 16, // přilepit na spodní hranu CONTENT zóny
-    width: RIGHT_BLOCK_WIDTH,
-    fontSize: 7,
+    left: GALLERY_BRAND_LEFT,
+    top: GALLERY_BRAND_TOP,
+    fontSize: 22,
     fontWeight: 700,
-    letterSpacing: 1.2,
+    letterSpacing: 4,
     textTransform: "uppercase",
     color: "#000",
-    textAlign: "right",
   },
   blankBigTitle: {
     position: "absolute",
     left: TEXT_X,
-    top: 14,
+    top: TITLE_TOP,
     width: LEFT_TEXT_WIDTH,
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 700,
     letterSpacing: -0.5,
+    textTransform: "uppercase",
     color: "#000",
   },
   blankSub: {
     position: "absolute",
     left: TEXT_X,
-    top: 50,
+    top: AUTHOR_TOP,
     width: LEFT_TEXT_WIDTH,
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 400,
-    letterSpacing: 0.4,
+    letterSpacing: 0.6,
     textTransform: "uppercase",
     color: "#666",
   },

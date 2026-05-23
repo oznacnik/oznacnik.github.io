@@ -10,9 +10,9 @@ import {
   fetchWorks,
   isPlaceholderTitle,
 } from "@/lib/install";
-import LiveFeed from "./vystavy/vernisaz/LiveFeed";
 import LiveMap from "./vystavy/vernisaz/LiveMap";
 import PhotoFeed from "./PhotoFeed";
+import PhotoLightbox, { type PhotoEntry } from "./PhotoLightbox";
 
 export const dynamic = "force-dynamic";
 
@@ -57,25 +57,61 @@ export default async function HomePage() {
     claimsByAuthor.get(c.author_id)!.push(c);
   }
 
+  // Sort: nejdřív veřejní autoři (claimnutí → bez claimu, abc), pak
+  // anonymové vždy na konec (claimnutí → bez claimu).
   const authorsSorted = [...displayAuthors].sort((a, b) => {
+    if (a.web_consent !== b.web_consent) return a.web_consent ? -1 : 1;
     const aCount = claimsByAuthor.get(a.id)?.length ?? 0;
     const bCount = claimsByAuthor.get(b.id)?.length ?? 0;
     if (aCount !== bCount) return bCount - aCount;
-    if (a.web_consent !== b.web_consent) return a.web_consent ? -1 : 1;
     return a.publicName.localeCompare(b.publicName, "cs");
   });
 
   const totalStops = claims.length;
   const totalAuthors = displayAuthors.length;
-  const photoClaims = claims
+
+  // Foto claimy (jen ty co mají aspoň 1 fotku), seřazené sestupně.
+  // Z téhle struktury PhotoFeed renderuje a zároveň PhotoLightbox dostane
+  // flat seznam fotek se stejným pořadím — globální index drží sync.
+  const photoClaimsSorted = [...claims]
     .filter((c) => (c.photo_paths ?? []).length > 0)
-    .map((c) => ({
-      stop_id: c.stop_id,
-      author_id: c.author_id,
-      work_ids: c.work_ids,
-      photo_paths: c.photo_paths ?? [],
-      claimed_at: c.claimed_at,
-    }));
+    .sort((a, b) => b.claimed_at.localeCompare(a.claimed_at));
+
+  const photoClaimsForFeed = photoClaimsSorted.map((c) => ({
+    stop_id: c.stop_id,
+    author_id: c.author_id,
+    work_ids: c.work_ids,
+    photo_paths: c.photo_paths ?? [],
+    claimed_at: c.claimed_at,
+  }));
+
+  const allPhotos: PhotoEntry[] = [];
+  const firstPhotoIdxByStop: Record<string, number> = {};
+  const globalIdxByPath: Record<string, number> = {};
+  for (const c of photoClaimsSorted) {
+    const stopName = stopsById.get(c.stop_id)?.stop_name ?? c.stop_id;
+    const authorName = authorsById.get(c.author_id)?.publicName ?? c.author_id;
+    const workTitles = c.work_ids
+      .map((id) => worksById.get(id)?.title)
+      .filter((t): t is string => !!t && !isPlaceholderTitle(t));
+    const paths = c.photo_paths ?? [];
+    for (let pi = 0; pi < paths.length; pi++) {
+      const gi = allPhotos.length;
+      allPhotos.push({
+        path: paths[pi],
+        stop_name: stopName,
+        author_name: authorName,
+        work_titles: workTitles,
+        claimed_at: c.claimed_at,
+        photo_idx_in_claim: pi,
+        total_photos_in_claim: paths.length,
+      });
+      globalIdxByPath[paths[pi]] = gi;
+      if (firstPhotoIdxByStop[c.stop_id] === undefined) {
+        firstPhotoIdxByStop[c.stop_id] = gi;
+      }
+    }
+  }
 
   return (
     <div>
@@ -98,7 +134,7 @@ export default async function HomePage() {
         <div className="mt-8 max-w-2xl">
           <div className="bar bar-thin mb-4" />
           <p className="type-body" style={{ fontWeight: 400 }}>
-            Kolektivní výstava napříč Prahou. {totalAuthors} {plural(totalAuthors, "autor", "autoři", "autorů")} na {totalStops} {plural(totalStops, "zastávce", "zastávkách", "zastávkách")}. Každá zastávka přidělená jednomu autorovi, díla v reklamních rámech tramvajových označníků.
+            Kolektivní výstava napříč Prahou.
           </p>
           <div className="bar bar-thin mt-4" />
         </div>
@@ -113,52 +149,7 @@ export default async function HomePage() {
         <Stat label="Děl celkem" value={claims.reduce((acc, c) => acc + c.work_ids.length, 0)} hideBorder={false} />
       </section>
 
-      {/* Live mapa */}
-      <section className="border-b-4 border-black">
-        <LiveMap
-          stops={stops.map((s) => ({
-            stop_id: s.stop_id,
-            stop_name: s.stop_name,
-            lat: s.lat,
-            lon: s.lon,
-          }))}
-          authors={displayAuthors.map((a) => ({
-            id: a.id,
-            publicName: a.publicName,
-            color: authorColor(a.id, allAuthorIds),
-          }))}
-          initialClaims={claims.map((c) => ({
-            stop_id: c.stop_id,
-            author_id: c.author_id,
-            claimed_at: c.claimed_at,
-          }))}
-        />
-      </section>
-
-      {/* Live feed (textový — co se kde právě stalo) */}
-      <section className="border-b-4 border-black">
-        <LiveFeed
-          stopsById={Object.fromEntries(stops.map((s) => [s.stop_id, s.stop_name]))}
-          authorsById={Object.fromEntries(
-            displayAuthors.map((a) => [
-              a.id,
-              { name: a.publicName, color: authorColor(a.id, allAuthorIds) },
-            ])
-          )}
-          worksById={Object.fromEntries(
-            works.map((w) => [w.id, { title: w.title }])
-          )}
-          initialClaims={claims.map((c) => ({
-            stop_id: c.stop_id,
-            author_id: c.author_id,
-            work_ids: c.work_ids,
-            photo_paths: c.photo_paths ?? [],
-            claimed_at: c.claimed_at,
-          }))}
-        />
-      </section>
-
-      {/* Foto feed — fotky z instalací, nejnovější nahoře, scroll až do konce */}
+      {/* ── Foto feed (live) ─────────────────────────────────────────── */}
       <section className="border-b-4 border-black">
         <div
           className="px-6 py-6 font-black uppercase"
@@ -171,7 +162,8 @@ export default async function HomePage() {
           Fotky · live z vernisáže
         </div>
         <PhotoFeed
-          initialClaims={photoClaims}
+          initialClaims={photoClaimsForFeed}
+          initialGlobalIdxByPath={globalIdxByPath}
           stopsById={Object.fromEntries(stops.map((s) => [s.stop_id, s.stop_name]))}
           authorsById={Object.fromEntries(
             displayAuthors.map((a) => [a.id, { name: a.publicName }])
@@ -182,7 +174,7 @@ export default async function HomePage() {
         />
       </section>
 
-      {/* Autoři */}
+      {/* ── Autoři ──────────────────────────────────────────────────── */}
       <section className="px-6 py-12">
         <h2 className="type-lg mb-8">Autoři</h2>
         <div className="flex flex-col gap-8">
@@ -246,6 +238,8 @@ export default async function HomePage() {
                       const realWorks = claimedWorks.filter(
                         (w) => !isPlaceholderTitle(w.title)
                       );
+                      const photoIdx = firstPhotoIdxByStop[c.stop_id];
+                      const stopLabel = stop?.stop_name ?? c.stop_id;
                       return (
                         <div
                           key={c.stop_id}
@@ -297,19 +291,40 @@ export default async function HomePage() {
                               ))}
                             </ul>
                           )}
-                          <div
-                            style={{
-                              fontSize: 10,
-                              fontWeight: 700,
-                              letterSpacing: "0.12em",
-                              textTransform: "uppercase",
-                              color: "#888",
-                              paddingTop: 6,
-                              borderTop: "1px solid #eee",
-                            }}
-                          >
-                            @ {stop?.stop_name ?? c.stop_id}
-                          </div>
+                          {photoIdx !== undefined ? (
+                            <a
+                              href={`#p-${photoIdx}`}
+                              style={{
+                                display: "block",
+                                fontSize: 10,
+                                fontWeight: 700,
+                                letterSpacing: "0.12em",
+                                textTransform: "uppercase",
+                                color: "#000",
+                                paddingTop: 6,
+                                borderTop: "1px solid #eee",
+                                textDecoration: "underline",
+                                textDecorationThickness: 1,
+                                textUnderlineOffset: 3,
+                              }}
+                            >
+                              @ {stopLabel} ›
+                            </a>
+                          ) : (
+                            <div
+                              style={{
+                                fontSize: 10,
+                                fontWeight: 700,
+                                letterSpacing: "0.12em",
+                                textTransform: "uppercase",
+                                color: "#888",
+                                paddingTop: 6,
+                                borderTop: "1px solid #eee",
+                              }}
+                            >
+                              @ {stopLabel}
+                            </div>
+                          )}
                           {c.notes && (
                             <div
                               style={{
@@ -335,63 +350,97 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <div className="bar bar-thick" />
+
+      {/* ── Mapa ────────────────────────────────────────────────────── */}
+      <section className="border-b-4 border-black">
+        <LiveMap
+          stops={stops.map((s) => ({
+            stop_id: s.stop_id,
+            stop_name: s.stop_name,
+            lat: s.lat,
+            lon: s.lon,
+          }))}
+          authors={displayAuthors.map((a) => ({
+            id: a.id,
+            publicName: a.publicName,
+            color: authorColor(a.id, allAuthorIds),
+          }))}
+          initialClaims={claims.map((c) => ({
+            stop_id: c.stop_id,
+            author_id: c.author_id,
+            claimed_at: c.claimed_at,
+          }))}
+        />
+      </section>
+
       {/* Zastávky podle abecedy */}
       {claims.length > 0 && (
-        <>
-          <div className="bar bar-thick" />
-          <section className="px-6 py-12">
-            <h2 className="type-lg mb-8">Všechny zastávky</h2>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-              {[...claims]
-                .sort((a, b) => {
-                  const an = stopsById.get(a.stop_id)?.stop_name ?? "";
-                  const bn = stopsById.get(b.stop_id)?.stop_name ?? "";
-                  return an.localeCompare(bn, "cs");
-                })
-                .map((c) => {
-                  const stop = stopsById.get(c.stop_id);
-                  const author = authorsById.get(c.author_id);
-                  const color = authorColor(c.author_id, allAuthorIds);
-                  return (
-                    <li
-                      key={c.stop_id}
+        <section className="px-6 py-12">
+          <h2 className="type-lg mb-8">Všechny zastávky</h2>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+            {[...claims]
+              .sort((a, b) => {
+                const an = stopsById.get(a.stop_id)?.stop_name ?? "";
+                const bn = stopsById.get(b.stop_id)?.stop_name ?? "";
+                return an.localeCompare(bn, "cs");
+              })
+              .map((c) => {
+                const stop = stopsById.get(c.stop_id);
+                const author = authorsById.get(c.author_id);
+                const color = authorColor(c.author_id, allAuthorIds);
+                const photoIdx = firstPhotoIdxByStop[c.stop_id];
+                const inner = (
+                  <>
+                    <span
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 14,
-                        padding: "12px 0",
-                        borderBottom: "1px solid #eee",
+                        width: 14,
+                        height: 14,
+                        background: color,
+                        border: "2px solid #000",
+                        flexShrink: 0,
                       }}
-                    >
-                      <span
-                        style={{
-                          width: 14,
-                          height: 14,
-                          background: color,
-                          border: "2px solid #000",
-                          flexShrink: 0,
-                        }}
-                      />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div className="font-black" style={{ fontSize: 16, letterSpacing: "-0.01em" }}>
-                          {stop?.stop_name ?? c.stop_id}
-                        </div>
-                        <div
-                          className="type-label"
-                          style={{ color: "#888", textTransform: "none", marginTop: 2 }}
-                        >
-                          {author?.publicName ?? c.author_id}
-                          {c.work_ids.length > 0 && (
-                            <> · {c.work_ids.length} {plural(c.work_ids.length, "dílo", "díla", "děl")}</>
-                          )}
-                        </div>
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="font-black" style={{ fontSize: 16, letterSpacing: "-0.01em" }}>
+                        {stop?.stop_name ?? c.stop_id}
                       </div>
-                    </li>
-                  );
-                })}
-            </ul>
-          </section>
-        </>
+                      <div
+                        className="type-label"
+                        style={{ color: "#888", textTransform: "none", marginTop: 2 }}
+                      >
+                        {author?.publicName ?? c.author_id}
+                        {c.work_ids.length > 0 && (
+                          <> · {c.work_ids.length} {plural(c.work_ids.length, "dílo", "díla", "děl")}</>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                );
+                const baseStyle: React.CSSProperties = {
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 14,
+                  padding: "12px 0",
+                  borderBottom: "1px solid #eee",
+                };
+                return (
+                  <li key={c.stop_id}>
+                    {photoIdx !== undefined ? (
+                      <a
+                        href={`#p-${photoIdx}`}
+                        style={{ ...baseStyle, color: "inherit", textDecoration: "none" }}
+                      >
+                        {inner}
+                      </a>
+                    ) : (
+                      <div style={baseStyle}>{inner}</div>
+                    )}
+                  </li>
+                );
+              })}
+          </ul>
+        </section>
       )}
 
       <div className="bar bar-thick" />
@@ -402,6 +451,8 @@ export default async function HomePage() {
         </span>
       </div>
       <div className="bar" />
+
+      <PhotoLightbox photos={allPhotos} />
     </div>
   );
 }

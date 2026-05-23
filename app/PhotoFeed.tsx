@@ -17,16 +17,23 @@ export default function PhotoFeed({
   stopsById,
   authorsById,
   worksById,
+  initialGlobalIdxByPath,
 }: {
   initialClaims: PhotoFeedClaim[];
   stopsById: Record<string, string>;
   authorsById: Record<string, { name: string }>;
   worksById: Record<string, { title: string }>;
+  // Mapování photo_path → globální index do PhotoLightbox.photos. Server
+  // pre-počítá tohle při loadu; pro realtime nové fotky doplňujeme my
+  // (po-fetch sort znovu + indexy).
+  initialGlobalIdxByPath: Record<string, number>;
 }) {
   const [claims, setClaims] = useState<PhotoFeedClaim[]>(initialClaims);
+  const [globalIdxByPath, setGlobalIdxByPath] = useState<
+    Record<string, number>
+  >(initialGlobalIdxByPath);
 
   useEffect(() => {
-    // Realtime: cokoli se v oznacnik_claims hne, re-fetchnout.
     const channel = supabase
       .channel("home-photo-feed")
       .on(
@@ -42,6 +49,14 @@ export default function PhotoFeed({
               (c) => (c.photo_paths ?? []).length > 0
             );
             setClaims(withPhotos);
+            // Recompute global photo indexes — fotky pole pak musí mít
+            // úplně stejné pořadí (sort desc by claimed_at) jako tady.
+            const idx: Record<string, number> = {};
+            let i = 0;
+            for (const c of withPhotos) {
+              for (const p of c.photo_paths) idx[p] = i++;
+            }
+            setGlobalIdxByPath(idx);
           }
         }
       )
@@ -81,7 +96,7 @@ export default function PhotoFeed({
       style={{
         display: "flex",
         flexDirection: "column",
-        maxWidth: 560,
+        maxWidth: 720,
         margin: "0 auto",
       }}
     >
@@ -99,7 +114,10 @@ export default function PhotoFeed({
               borderBottom: "4px solid #000",
             }}
           >
-            <PhotoBlock paths={c.photo_paths} />
+            <PhotoBlock
+              paths={c.photo_paths}
+              globalIdxByPath={globalIdxByPath}
+            />
             <div style={{ padding: "20px 24px" }}>
               <div
                 className="font-black uppercase leading-none"
@@ -156,74 +174,90 @@ export default function PhotoFeed({
   );
 }
 
-function PhotoBlock({ paths }: { paths: string[] }) {
+function PhotoBlock({
+  paths,
+  globalIdxByPath,
+}: {
+  paths: string[];
+  globalIdxByPath: Record<string, number>;
+}) {
   if (paths.length === 1) {
     return (
-      <a
-        href={scoutingPhotoUrl(paths[0])}
-        target="_blank"
-        rel="noopener"
-        style={{
-          display: "block",
-          width: "100%",
-          background: "#000",
-          aspectRatio: "4/3",
-          overflow: "hidden",
-        }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={scoutingPhotoUrl(paths[0])}
-          alt=""
-          loading="lazy"
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            display: "block",
-          }}
-        />
-      </a>
+      <PhotoThumb
+        path={paths[0]}
+        globalIdx={globalIdxByPath[paths[0]] ?? 0}
+        aspect="4 / 3"
+      />
     );
   }
-  // 2+ fotek: hlavní vlevo, mřížka vpravo (na velkém viewportu) /
-  // jednoduchý grid na malém.
+  if (paths.length === 2) {
+    // Mobil: 2 fotky pod sebou s viditelnou mezerou (snazší listovat
+    // a každá zabere celou šířku). Desktop: side-by-side, vidíš obě naráz.
+    return (
+      <div
+        className="grid grid-cols-1 sm:grid-cols-2"
+        style={{ background: "#000", gap: 4 }}
+      >
+        {paths.map((p) => (
+          <PhotoThumb
+            key={p}
+            path={p}
+            globalIdx={globalIdxByPath[p] ?? 0}
+            aspect="1 / 1"
+          />
+        ))}
+      </div>
+    );
+  }
+  // 3+: kompaktní mřížka
   return (
     <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-        gap: 2,
-        background: "#000",
-      }}
+      className="grid grid-cols-2 sm:grid-cols-3"
+      style={{ background: "#000", gap: 2 }}
     >
       {paths.map((p) => (
-        <a
+        <PhotoThumb
           key={p}
-          href={scoutingPhotoUrl(p)}
-          target="_blank"
-          rel="noopener"
-          style={{
-            display: "block",
-            aspectRatio: "1",
-            background: "#111",
-            overflow: "hidden",
-          }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={scoutingPhotoUrl(p)}
-            alt=""
-            loading="lazy"
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              display: "block",
-            }}
-          />
-        </a>
+          path={p}
+          globalIdx={globalIdxByPath[p] ?? 0}
+          aspect="1 / 1"
+        />
       ))}
     </div>
+  );
+}
+
+function PhotoThumb({
+  path,
+  globalIdx,
+  aspect,
+}: {
+  path: string;
+  globalIdx: number;
+  aspect: string;
+}) {
+  return (
+    <a
+      href={`#p-${globalIdx}`}
+      style={{
+        display: "block",
+        background: "#111",
+        aspectRatio: aspect,
+        overflow: "hidden",
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={scoutingPhotoUrl(path)}
+        alt=""
+        loading="lazy"
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          display: "block",
+        }}
+      />
+    </a>
   );
 }

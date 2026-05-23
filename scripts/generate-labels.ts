@@ -75,9 +75,35 @@ if (HAS_CJK_FONT) {
 }
 
 const CJK_RE = /[　-鿿가-힯豈-﫿]/;
-function fontFor(text: string): "Inter" | "NotoCJK" {
-  if (HAS_CJK_FONT && CJK_RE.test(text)) return "NotoCJK";
-  return "Inter";
+function isCJKChar(c: string): boolean {
+  return CJK_RE.test(c);
+}
+
+// Rozdělí text na souvislé chunky stejného scriptu. Latin chunky pak
+// renderujeme v Inter (má `ů`, `ň` apod.), CJK chunky v NotoCJK.
+// NotoCJK má sice Latin glyfy, ale ne celý Latin Extended-A — dřív
+// jsem celé „除四害 kampaň 4 škůdců" pustil přes NotoCJK a `ů` vypadly.
+function splitByScript(text: string): { text: string; isCJK: boolean }[] {
+  if (!HAS_CJK_FONT) return [{ text, isCJK: false }];
+  const out: { text: string; isCJK: boolean }[] = [];
+  let current = "";
+  let currentIsCJK = false;
+  // Iterátor přes Unicode code points — surrogate-safe pro CJK Ext B+.
+  for (const ch of text) {
+    const cjk = isCJKChar(ch);
+    if (current === "") {
+      current = ch;
+      currentIsCJK = cjk;
+    } else if (cjk === currentIsCJK) {
+      current += ch;
+    } else {
+      out.push({ text: current, isCJK: currentIsCJK });
+      current = ch;
+      currentIsCJK = cjk;
+    }
+  }
+  if (current) out.push({ text: current, isCJK: currentIsCJK });
+  return out;
 }
 
 const sb = createClient(URL_, KEY_, { auth: { persistSession: false } });
@@ -388,18 +414,40 @@ function Label({ l }: { l: LabelData }) {
     View,
     { style: s.label },
     React.createElement(Image, { style: s.qrImage, src: l.qrDataUrl }),
-    React.createElement(
-      Text,
-      { style: [s.workTitle, { fontFamily: fontFor(titleLine) }] },
-      titleLine
-    ),
-    React.createElement(
-      Text,
-      { style: [s.authorName, { fontFamily: fontFor(l.authorName) }] },
-      l.authorName
-    ),
+    multiScriptText(titleLine, s.workTitle, "title"),
+    multiScriptText(l.authorName, s.authorName, "author"),
     React.createElement(Text, { style: s.galleryBrand }, "Galerie Označník"),
     ...idAndUrl
+  );
+}
+
+// Wrap textu pro mix Latin/CJK. Když text neobsahuje CJK, vrací jen
+// jeden <Text> (žádný nested mark-up = stejný layout jako dřív).
+// Jinak vrací parent <Text> se style + nested <Text> chunky se
+// správným fontem.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function multiScriptText(text: string, style: any, keyPrefix: string) {
+  const chunks = splitByScript(text);
+  if (chunks.length === 1 && !chunks[0].isCJK) {
+    return React.createElement(
+      Text,
+      { style: [style, { fontFamily: "Inter" }] },
+      text
+    );
+  }
+  return React.createElement(
+    Text,
+    { style },
+    chunks.map((c, i) =>
+      React.createElement(
+        Text,
+        {
+          key: `${keyPrefix}-${i}`,
+          style: { fontFamily: c.isCJK ? "NotoCJK" : "Inter" },
+        },
+        c.text
+      )
+    )
   );
 }
 

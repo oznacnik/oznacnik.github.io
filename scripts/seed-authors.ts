@@ -52,10 +52,10 @@ const MANUAL_AUTHORS: ManualAuthor[] = [
   },
   {
     id: "vavrecka",
-    name: "Vavrečka",
-    requested_stops: 10,
+    name: "Ondřej Vavřečka",
+    requested_stops: 15, // 15 × 2 = 30 fyzických popisků
     works: [{ ord: 1, title: "(bez názvu)" }],
-    notes: "CSV bez seznamu děl, jen 10 zast. / 20 kopií",
+    notes: "CSV bez seznamu děl, 15 zast. / 30 kopií blank popisků",
   },
   {
     id: "ptacek",

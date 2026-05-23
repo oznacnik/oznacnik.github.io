@@ -79,6 +79,19 @@ function isCJKChar(c: string): boolean {
   return CJK_RE.test(c);
 }
 
+// Auto-shrink titulu když je dlouhý. CJK znaky jsou prakticky 2× širší
+// než Latin, tak je počítáme dvojnásobně. Default fontSize 22 funguje
+// do ~22 „latin-ekvivalent" znaků; pak skáčeme dolů.
+function scaledTitleFontSize(text: string): number {
+  let weight = 0;
+  for (const ch of text) weight += isCJKChar(ch) ? 2 : 1;
+  if (weight <= 22) return 22;
+  if (weight <= 30) return 18;
+  if (weight <= 42) return 14;
+  if (weight <= 60) return 11;
+  return 9;
+}
+
 // Rozdělí text na souvislé chunky stejného scriptu. Latin chunky pak
 // renderujeme v Inter (má `ů`, `ň` apod.), CJK chunky v NotoCJK.
 // NotoCJK má sice Latin glyfy, ale ne celý Latin Extended-A — dřív
@@ -410,11 +423,16 @@ function Label({ l }: { l: LabelData }) {
   }
   // Technika na popisek nepatří — jen na web. Year zůstává v titulu.
   const titleLine = [l.workTitle, l.workYear].filter(Boolean).join(" / ");
+  const titleFontSize = scaledTitleFontSize(titleLine);
   return React.createElement(
     View,
     { style: s.label },
     React.createElement(Image, { style: s.qrImage, src: l.qrDataUrl }),
-    multiScriptText(titleLine, s.workTitle, "title"),
+    multiScriptText(
+      titleLine,
+      [s.workTitle, { fontSize: titleFontSize }],
+      "title"
+    ),
     multiScriptText(l.authorName, s.authorName, "author"),
     React.createElement(Text, { style: s.galleryBrand }, "Galerie Označník"),
     ...idAndUrl

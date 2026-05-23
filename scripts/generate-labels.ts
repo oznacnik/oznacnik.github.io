@@ -55,6 +55,11 @@ Font.register({
   ],
 });
 
+// Vypnout dělení slov při wrap — react-pdf default hyphenates a tituly
+// pak vypadají jako „NASTARTU-JI". Tady říkáme „každé slovo je jediný
+// chunk, nedělit", takže buď se vejde celé na řádek, nebo přeskočí na další.
+Font.registerHyphenationCallback((word) => [word]);
+
 // CJK fallback — některé tituly obsahují čínské znaky (např. „除四害
 // kampaň 4 škůdců"), které Inter nemá v glyph table. NotoSansCJKsc
 // pokrývá Han + Hiragana + Katakana + Hangul + Latin (vč. českých

@@ -126,12 +126,13 @@ export default function InstallList({
               style={{
                 fontSize: 11,
                 letterSpacing: "0.12em",
-                color: "#fff",
-                border: "2px solid #fff",
+                color: "#000",
+                background: "#00B341",
+                border: "2px solid #00B341",
                 padding: "4px 8px",
               }}
             >
-              Autoři
+              Attendance
             </Link>
           </div>
         </div>

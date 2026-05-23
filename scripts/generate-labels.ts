@@ -41,6 +41,11 @@ const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const KEY_ = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://oznacnik-github-io.vercel.app";
+// Hostname bez protokolu — to co se tiskne na popisku jako lidsky čitelná
+// URL. GitHub Pages je jen statický mirror; samotná aplikace (claim,
+// realtime, photo upload) běží jen na Vercelu, takže tam musí směrovat
+// i QR scan i to, co operátor / divák uvidí v rámu.
+const PRINTED_HOSTNAME = SITE_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
 Font.register({
   family: "Inter",
@@ -50,14 +55,61 @@ Font.register({
   ],
 });
 
+// CJK fallback — některé tituly obsahují čínské znaky (např. „除四害
+// kampaň 4 škůdců"), které Inter nemá v glyph table. NotoSansCJKsc
+// pokrývá Han + Hiragana + Katakana + Hangul + Latin (vč. českých
+// diakritik), takže když v textu detekujeme CJK, přepneme celý Text
+// na tuhle rodinu. Font není v repu (16 MB) — gitignore, dotahuje se
+// jednorázově. Viz scripts/README pro download command.
+const NOTO_CJK_PATH = path.join(
+  process.cwd(),
+  "public/fonts/NotoSansCJKsc-Regular.otf"
+);
+const HAS_CJK_FONT = fs.existsSync(NOTO_CJK_PATH);
+if (HAS_CJK_FONT) {
+  Font.register({ family: "NotoCJK", src: NOTO_CJK_PATH });
+} else {
+  console.warn(
+    `⚠ ${NOTO_CJK_PATH} nenalezen — tituly s CJK znaky se renderují prázdně.`
+  );
+}
+
+const CJK_RE = /[　-鿿가-힯豈-﫿]/;
+function fontFor(text: string): "Inter" | "NotoCJK" {
+  if (HAS_CJK_FONT && CJK_RE.test(text)) return "NotoCJK";
+  return "Inter";
+}
+
 const sb = createClient(URL_, KEY_, { auth: { persistSession: false } });
 
 interface Author {
   id: string;
   name: string;
+  display_name: string | null;
   popisek_consent: boolean;
   requested_stops: number | null;
   web_consent: boolean;
+}
+
+// Konzistentní zobrazení autora — pseudonym má přednost před legal name.
+// (Stejné chování jako lib/install#displayName, jen tady duplikováno
+// aby skript nevisel na app/lib aliasu při tsx běhu.)
+function displayAuthor(a: Author): string {
+  return a.display_name?.trim() || a.name;
+}
+
+// Některé PDF renderery se zaseknou na NFD diakritice — sjednotit na NFC.
+function nfc(s: string): string {
+  return s.normalize("NFC");
+}
+
+// react-pdf občas neaplikuje maxLines + ellipsis čistě (různé verze),
+// takže rovnou ořezáváme v JS na bezpečnou délku. Konec: nahrazení
+// vícenásobných whitespace a explicitních newlinů jednou mezerou.
+function truncate(s: string, maxChars: number): string {
+  const clean = s.replace(/\s+/g, " ").trim();
+  if (clean.length <= maxChars) return clean;
+  return clean.slice(0, maxChars - 1).trimEnd() + "…";
 }
 interface Work {
   id: string;
@@ -143,112 +195,146 @@ async function ensureLabels(): Promise<QrLabel[]> {
 
 // ─── PDF render ───────────────────────────────────────────────────────
 
-// Label size: 80 × 40 mm landscape (uživatelská spec). Na A4 (210 × 297 mm)
-// se vleze 2 × 6 = 12 labelů. Border + řezání = potřebujeme rezervu;
-// 7 řad pretékal a react-pdf paginal s blank pages mezi.
-// react-pdf body units: 1mm = 2.83465 pt.
+// Label = úzký pás na šířku celé A4 (297×38mm). Vychází z předlohy
+// label.svg (viewBox 842.89×108.04 pt). Pozice prvků jsou odvozené
+// přímo z těch pt souřadnic — žádný přepočet, react-pdf používá pt.
+// Na jednu A4 landscape stránku se vejde 5 popisků pod sebou
+// (5 × 38 = 190mm, zbývajících 20mm rozdělíme jako horní/spodní padding).
 const MM = 2.83465;
-const BORDER = 1.5;
-const LABEL_W = 80 * MM;
-const LABEL_H = 40 * MM;
-const SLOT_W = LABEL_W + BORDER * 2; // skutečně zabraný prostor s borderem
-const SLOT_H = LABEL_H + BORDER * 2;
-const COLS = 2;
-const ROWS = 6;
-const LABELS_PER_PAGE = COLS * ROWS; // 12
-const PAGE_W = 210 * MM;
-const PAGE_H = 297 * MM;
-const SIDE_PADDING = Math.max(0, (PAGE_W - COLS * SLOT_W) / 2);
-const TOP_PADDING = Math.max(0, (PAGE_H - ROWS * SLOT_H) / 2);
+// A4 portrait — užší stránka, aby šly popisky tisknout normálně.
+const PAGE_W_PT = 210 * MM; // ~595.28
+const PAGE_H_PT = 297 * MM; // ~841.89
+const SIDE_PADDING = 8; // ~3mm okraj na každé straně (safe printable area)
+const LABEL_W_PT = PAGE_W_PT - SIDE_PADDING * 2; // ~579
+const PAGE_PADDING_V = 10;
+// Popisek = horní content zóna (108pt podle SVG) + 3cm prázdná plocha
+// dole UVNITŘ rámečku. Ten prostor je pro ruční značení / odlomení /
+// vlepení do reklamního rámu, nebo prostě klidová zóna.
+const CONTENT_H_PT = 108.04;
+const BOTTOM_NOTES_PT = 30 * MM; // 3 cm
+const LABEL_H_PT = CONTENT_H_PT + BOTTOM_NOTES_PT; // ~193
+const BORDER = 1;
+// 4 × 193 = 772pt; do 842 − 20 padding = 822pt se vejdou pohodlně 4.
+const LABELS_PER_PAGE = 4;
+
+// QR čtverec — zvětšený o 30 % oproti SVG (51.02 → 66.33),
+// vertikálně vycentrovaný v horní content zóně.
+const QR_SIZE = 51.02 * 1.3;
+const QR_X = 12;
+const QR_Y = (CONTENT_H_PT - QR_SIZE) / 2;
+
+// Levý textový sloupec (title / author / technique). Pravý sloupec
+// (ID, URL, brand) je zarovnaný k pravému okraji label boxu.
+const TEXT_X = QR_X + QR_SIZE + 12;
+const RIGHT_BLOCK_WIDTH = 90;
+const RIGHT_BLOCK_RIGHT = 10;
+const TEXT_RIGHT_LIMIT = LABEL_W_PT - RIGHT_BLOCK_WIDTH - RIGHT_BLOCK_RIGHT - 8;
+const LEFT_TEXT_WIDTH = TEXT_RIGHT_LIMIT - TEXT_X;
 
 const s = StyleSheet.create({
   page: {
     fontFamily: "Inter",
     backgroundColor: "#fff",
-    paddingTop: TOP_PADDING,
-    paddingBottom: TOP_PADDING,
+    paddingTop: PAGE_PADDING_V,
+    paddingBottom: PAGE_PADDING_V,
     paddingLeft: SIDE_PADDING,
     paddingRight: SIDE_PADDING,
   },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    width: COLS * SLOT_W,
-    height: ROWS * SLOT_H,
-  },
   label: {
-    width: LABEL_W,
-    height: LABEL_H,
+    width: LABEL_W_PT,
+    height: LABEL_H_PT,
     border: `${BORDER}pt solid #000`,
-    flexDirection: "row",
-    padding: 6,
-    gap: 6,
+    position: "relative",
+    overflow: "hidden",
   },
-  textCol: {
-    flex: 1,
-    flexDirection: "column",
-    justifyContent: "space-between",
-    minWidth: 0,
-  },
-  qrCol: {
-    width: 22 * MM,
-    flexDirection: "column",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-  },
-  authorName: {
-    fontSize: 7,
-    fontWeight: 700,
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-    color: "#000",
+  qrImage: {
+    position: "absolute",
+    left: QR_X,
+    top: QR_Y,
+    width: QR_SIZE,
+    height: QR_SIZE,
   },
   workTitle: {
-    fontSize: 11,
-    fontWeight: 700,
-    letterSpacing: -0.3,
-    lineHeight: 1.05,
+    position: "absolute",
+    left: TEXT_X,
+    top: 12,
+    width: LEFT_TEXT_WIDTH,
+    fontSize: 13,
+    fontWeight: 400,
+    lineHeight: 1.2,
     color: "#000",
-    marginTop: 3,
+  },
+  authorName: {
+    position: "absolute",
+    left: TEXT_X,
+    top: 50,
+    width: LEFT_TEXT_WIDTH,
+    fontSize: 12,
+    fontWeight: 700,
+    color: "#000",
   },
   workTech: {
-    fontSize: 7,
-    fontWeight: 700,
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-    color: "#000",
-    marginTop: 3,
+    position: "absolute",
+    left: TEXT_X,
+    top: 72,
+    width: LEFT_TEXT_WIDTH,
+    fontSize: 10,
+    fontWeight: 400,
+    color: "#555",
   },
-  workYear: {
+  qrIndex: {
+    position: "absolute",
+    right: RIGHT_BLOCK_RIGHT,
+    top: 12,
+    width: RIGHT_BLOCK_WIDTH,
+    fontSize: 14,
+    fontWeight: 700,
+    letterSpacing: 0.6,
+    color: "#000",
+    textAlign: "right",
+  },
+  urlText: {
+    position: "absolute",
+    right: RIGHT_BLOCK_RIGHT,
+    top: 32,
+    width: RIGHT_BLOCK_WIDTH,
     fontSize: 7,
     fontWeight: 400,
     color: "#666",
-    marginTop: 1,
+    textAlign: "right",
   },
-  galleryFooter: {
-    fontSize: 5.5,
+  galleryBrand: {
+    position: "absolute",
+    right: RIGHT_BLOCK_RIGHT,
+    top: CONTENT_H_PT - 16, // přilepit na spodní hranu CONTENT zóny
+    width: RIGHT_BLOCK_WIDTH,
+    fontSize: 7,
     fontWeight: 700,
-    letterSpacing: 0.8,
+    letterSpacing: 1.2,
     textTransform: "uppercase",
-    color: "#aaa",
-  },
-  qrImage: {
-    width: 22 * MM,
-    height: 22 * MM,
-  },
-  qrIndex: {
-    fontSize: 6,
-    fontWeight: 700,
-    letterSpacing: 0.4,
     color: "#000",
     textAlign: "right",
   },
   blankBigTitle: {
-    fontSize: 16,
+    position: "absolute",
+    left: TEXT_X,
+    top: 14,
+    width: LEFT_TEXT_WIDTH,
+    fontSize: 22,
     fontWeight: 700,
     letterSpacing: -0.5,
-    lineHeight: 1.0,
     color: "#000",
+  },
+  blankSub: {
+    position: "absolute",
+    left: TEXT_X,
+    top: 50,
+    width: LEFT_TEXT_WIDTH,
+    fontSize: 10,
+    fontWeight: 400,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+    color: "#666",
   },
 });
 
@@ -268,6 +354,48 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
+function Label({ l }: { l: LabelData }) {
+  const indexLabel = `#${String(l.qr_index).padStart(3, "0")}`;
+  const rightBlock = [
+    React.createElement(Text, { style: s.urlText, key: "url" }, PRINTED_HOSTNAME),
+    React.createElement(Text, { style: s.qrIndex, key: "idx" }, indexLabel),
+    React.createElement(Text, { style: s.galleryBrand, key: "brand" }, "Galerie Označník"),
+  ];
+  if (l.blank) {
+    return React.createElement(
+      View,
+      { style: s.label },
+      React.createElement(Image, { style: s.qrImage, src: l.qrDataUrl }),
+      React.createElement(Text, { style: s.blankBigTitle }, "GALERIE OZNAČNÍK"),
+      React.createElement(Text, { style: s.blankSub }, "Vernisáž 2026"),
+      ...rightBlock
+    );
+  }
+  const titleLine = [l.workTitle, l.workYear].filter(Boolean).join(" / ");
+  return React.createElement(
+    View,
+    { style: s.label },
+    React.createElement(Image, { style: s.qrImage, src: l.qrDataUrl }),
+    React.createElement(
+      Text,
+      { style: [s.workTitle, { fontFamily: fontFor(titleLine) }] },
+      titleLine
+    ),
+    React.createElement(
+      Text,
+      { style: [s.authorName, { fontFamily: fontFor(l.authorName) }] },
+      l.authorName
+    ),
+    l.workTech &&
+      React.createElement(
+        Text,
+        { style: [s.workTech, { fontFamily: fontFor(l.workTech) }] },
+        l.workTech
+      ),
+    ...rightBlock
+  );
+}
+
 function LabelsDocument({ labels }: { labels: LabelData[] }) {
   const pages = chunk(labels, LABELS_PER_PAGE);
   return React.createElement(
@@ -276,61 +404,9 @@ function LabelsDocument({ labels }: { labels: LabelData[] }) {
     pages.map((pageLabels, pi) =>
       React.createElement(
         Page,
-        { size: "A4", style: s.page, key: pi },
-        React.createElement(
-          View,
-          { style: s.grid },
-          pageLabels.map((l) =>
-            React.createElement(
-              View,
-              { style: s.label, key: l.qr_index },
-              l.blank
-                ? React.createElement(
-                    View,
-                    { style: s.textCol },
-                    React.createElement(
-                      View,
-                      {},
-                      React.createElement(Text, { style: s.blankBigTitle }, "GALERIE"),
-                      React.createElement(Text, { style: s.blankBigTitle }, "OZNAČNÍK")
-                    ),
-                    React.createElement(
-                      Text,
-                      { style: s.galleryFooter },
-                      "Vernisáž 2026"
-                    )
-                  )
-                : React.createElement(
-                    View,
-                    { style: s.textCol },
-                    React.createElement(
-                      View,
-                      {},
-                      React.createElement(Text, { style: s.authorName }, l.authorName),
-                      React.createElement(Text, { style: s.workTitle }, l.workTitle),
-                      l.workTech &&
-                        React.createElement(Text, { style: s.workTech }, l.workTech),
-                      l.workYear &&
-                        React.createElement(Text, { style: s.workYear }, l.workYear)
-                    ),
-                    React.createElement(
-                      Text,
-                      { style: s.galleryFooter },
-                      "Galerie Označník · 2026"
-                    )
-                  ),
-              React.createElement(
-                View,
-                { style: s.qrCol },
-                React.createElement(Image, { style: s.qrImage, src: l.qrDataUrl }),
-                React.createElement(
-                  Text,
-                  { style: s.qrIndex },
-                  `#${String(l.qr_index).padStart(3, "0")}`
-                )
-              )
-            )
-          )
+        { size: "A4", orientation: "portrait", style: s.page, key: pi },
+        pageLabels.map((l) =>
+          React.createElement(Label, { l, key: l.qr_index })
         )
       )
     )
@@ -361,12 +437,14 @@ async function buildLabelData(labels: QrLabel[]): Promise<LabelData[]> {
       color: { dark: "#000000", light: "#ffffff" },
     });
 
+    // Limit tak, aby se titul nezalomil přes řádek autora.
+    // ~75 znaků = bezpečně 1 řádek při 13pt na ~470pt šířce.
     out.push({
       qr_index: l.qr_index,
       blank: !a.popisek_consent,
-      authorName: a.name,
-      workTitle: w.title,
-      workTech: w.technique || null,
+      authorName: truncate(nfc(displayAuthor(a)), 48),
+      workTitle: truncate(nfc(w.title), 75),
+      workTech: w.technique ? truncate(nfc(w.technique), 65) : null,
       workYear: w.year ? String(w.year) : null,
       qrDataUrl,
     });

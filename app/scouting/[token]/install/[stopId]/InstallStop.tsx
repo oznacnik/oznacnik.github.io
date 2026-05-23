@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { type StopWithAnnotation } from "@/lib/scouting";
-import { authorColor, type AuthorWithProgress, type Claim } from "@/lib/install";
-import { supabase } from "@/lib/supabase";
+import { authorColor, displayName, type AuthorWithProgress, type Claim } from "@/lib/install";
+import { supabase, SCOUTING_BUCKET, scoutingPhotoUrl } from "@/lib/supabase";
 
 interface QrLabelHere {
   qr_index: number;
@@ -34,7 +34,6 @@ export default function InstallStop({
   stop,
   authors,
   existingClaim,
-  workPlacements,
   labelsHere: initialLabelsHere,
   lastAuthorId,
   claimsCountSoFar,
@@ -43,7 +42,6 @@ export default function InstallStop({
   stop: StopWithAnnotation;
   authors: AuthorWithProgress[];
   existingClaim: Claim | null;
-  workPlacements: Record<string, number>;
   labelsHere: QrLabelHere[];
   lastAuthorId: string | null;
   claimsCountSoFar: number;
@@ -53,6 +51,8 @@ export default function InstallStop({
   // Pokud zastávka už má claim, předvyplníme. Jinak čekáme na "rozhození".
   const [authorId, setAuthorId] = useState<string>(existingClaim?.author_id ?? "");
   const [notes, setNotes] = useState<string>(existingClaim?.notes ?? "");
+  const [photos, setPhotos] = useState<string[]>(existingClaim?.photo_paths ?? []);
+  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,11 +73,11 @@ export default function InstallStop({
   const allAuthorIds = useMemo(() => authors.map((a) => a.id), [authors]);
   const selectedAuthor = authors.find((a) => a.id === authorId) ?? null;
 
-  // Autoři co ještě mají kvótu = kandidáti pro rozhození
+  // Autoři co ještě mají kvótu A jsou fyzicky přítomni = kandidáti
   const candidates = useMemo(() => {
     return authors.filter((a) => {
       const quota = a.requested_stops ?? 0;
-      return quota > 0 && a.claimedStops < quota;
+      return a.present && quota > 0 && a.claimedStops < quota;
     });
   }, [authors]);
 
@@ -197,6 +197,63 @@ export default function InstallStop({
     return Array.from(out);
   }, [pickedQrIndices, visibleLabels]);
 
+  // Manual override: operátor ručně vybere autora bez random algoritmu.
+  // Stejná logika jako rollAuthor ohledně fetch poolu, jen bez vážení.
+  const pickAuthorManually = async (id: string) => {
+    setError(null);
+    setAuthorId(id);
+    setPickedQrIndices(new Set());
+    setLoadingPool(true);
+    try {
+      const { data, error: poolErr } = await supabase
+        .from("oznacnik_qr_labels")
+        .select("qr_index, work_id, author_id, label_seq, stop_id")
+        .eq("author_id", id)
+        .or(`stop_id.is.null,stop_id.eq.${stop.stop_id}`)
+        .order("qr_index");
+      if (poolErr) throw poolErr;
+      setAvailableLabels((data ?? []) as AvailableLabel[]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Načtení popisků selhalo");
+    } finally {
+      setLoadingPool(false);
+    }
+  };
+
+  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const newPaths: string[] = [];
+      for (const file of files) {
+        const ext = file.name.split(".").pop() || "jpg";
+        const ts = Date.now();
+        const path = `vernisaz/${stop.stop_id}/${ts}-${Math.random()
+          .toString(36)
+          .slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from(SCOUTING_BUCKET)
+          .upload(path, file, { contentType: file.type, upsert: false });
+        if (upErr) throw upErr;
+        newPaths.push(path);
+      }
+      setPhotos((p) => [...p, ...newPaths]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload selhal");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const removePhoto = async (path: string) => {
+    if (!confirm("Smazat fotku?")) return;
+    await supabase.storage.from(SCOUTING_BUCKET).remove([path]);
+    setPhotos((p) => p.filter((x) => x !== path));
+  };
+
   const toggleLabel = (qrIndex: number) => {
     setPickedQrIndices((prev) => {
       const next = new Set(prev);
@@ -243,6 +300,7 @@ export default function InstallStop({
           author_id: authorId,
           work_ids: workIds,
           notes: notes.trim() || null,
+          photo_paths: photos,
         },
         { onConflict: "stop_id" }
       );
@@ -341,6 +399,12 @@ export default function InstallStop({
           >
             CLAIM
           </button>
+
+          <ManualPicker
+            authors={authors}
+            currentAuthorId=""
+            onPick={pickAuthorManually}
+          />
         </section>
       ) : (
         <section
@@ -368,7 +432,7 @@ export default function InstallStop({
               marginTop: 4,
             }}
           >
-            {selectedAuthor.name}
+            {displayName(selectedAuthor)}
           </div>
           <div
             style={{
@@ -450,6 +514,13 @@ export default function InstallStop({
               Rozhodit znova
             </button>
           )}
+
+          <ManualPicker
+            authors={authors}
+            currentAuthorId={authorId}
+            onPick={pickAuthorManually}
+            textColor={contrast(authorBg ?? "#fff")}
+          />
         </section>
       )}
 
@@ -557,6 +628,86 @@ export default function InstallStop({
                 })}
             </div>
           )}
+        </section>
+      )}
+
+      {/* Fotky — propíše do live feedu */}
+      {selectedAuthor && (
+        <section style={{ padding: 16, background: "#fff", borderBottom: "2px solid #ddd" }}>
+          <div style={eyebrow}>Fotky ({photos.length}) — propíše do live feedu</div>
+          {photos.length > 0 && (
+            <div
+              className="grid gap-2 mb-3"
+              style={{ gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))" }}
+            >
+              {photos.map((p) => (
+                <div
+                  key={p}
+                  style={{
+                    position: "relative",
+                    aspectRatio: "1",
+                    overflow: "hidden",
+                    border: "2px solid #000",
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={scoutingPhotoUrl(p)}
+                    alt=""
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: "block",
+                    }}
+                  />
+                  <button
+                    onClick={() => removePhoto(p)}
+                    style={{
+                      position: "absolute",
+                      top: 4,
+                      right: 4,
+                      background: "#000",
+                      color: "#fff",
+                      border: "none",
+                      width: 22,
+                      height: 22,
+                      fontSize: 12,
+                      fontWeight: 900,
+                      cursor: "pointer",
+                    }}
+                  >
+                    x
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <label
+            style={{
+              display: "block",
+              padding: 14,
+              border: "3px dashed #000",
+              textAlign: "center",
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              cursor: uploading ? "wait" : "pointer",
+              background: uploading ? "#eee" : "#fff",
+            }}
+          >
+            {uploading ? "Nahrávám…" : "Pořídit / vybrat fotku"}
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              multiple
+              onChange={handlePhoto}
+              disabled={uploading}
+              style={{ display: "none" }}
+            />
+          </label>
         </section>
       )}
 
@@ -720,4 +871,75 @@ function contrast(bg: string, opacity = 1): string {
   const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   if (lum > 0.55) return opacity < 1 ? `rgba(0,0,0,${opacity})` : "#000";
   return opacity < 1 ? `rgba(255,255,255,${opacity})` : "#fff";
+}
+
+// Manual override picker — operátor ručně vybere autora (override random).
+// Ukáže pouze present=true autory s remaining kvótou.
+function ManualPicker({
+  authors,
+  currentAuthorId,
+  onPick,
+  textColor = "#000",
+}: {
+  authors: AuthorWithProgress[];
+  currentAuthorId: string;
+  onPick: (id: string) => void;
+  textColor?: string;
+}) {
+  const eligible = authors
+    .filter((a) => a.present)
+    .filter((a) => {
+      const quota = a.requested_stops ?? 0;
+      return quota > 0;
+    })
+    .sort((a, b) => displayName(a).localeCompare(displayName(b), "cs"));
+
+  return (
+    <div style={{ marginTop: 14 }}>
+      <div
+        style={{
+          fontSize: 9,
+          fontWeight: 700,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          color: textColor,
+          opacity: 0.6,
+          marginBottom: 6,
+        }}
+      >
+        Manual override
+      </div>
+      <select
+        value={currentAuthorId}
+        onChange={(e) => {
+          if (e.target.value) onPick(e.target.value);
+        }}
+        style={{
+          width: "100%",
+          padding: "10px 12px",
+          fontFamily: "inherit",
+          fontSize: 13,
+          fontWeight: 700,
+          letterSpacing: "-0.01em",
+          border: `2px solid ${textColor}`,
+          background: "transparent",
+          color: textColor,
+          cursor: "pointer",
+          appearance: "none",
+        }}
+      >
+        <option value="" style={{ color: "#000" }}>
+          — vyber autora ručně —
+        </option>
+        {eligible.map((a) => {
+          const left = a.labelsRemaining;
+          return (
+            <option key={a.id} value={a.id} style={{ color: "#000" }}>
+              {displayName(a)} ({a.claimedStops}/{a.requested_stops}, {left} labels)
+            </option>
+          );
+        })}
+      </select>
+    </div>
+  );
 }

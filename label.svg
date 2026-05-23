@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 842.89 108.04">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+        stroke: #231f20;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-2 {
+        font-family: HelveticaNeue-Bold, 'Helvetica Neue';
+        font-weight: 700;
+      }
+
+      .cls-2, .cls-3, .cls-4, .cls-5 {
+        fill: #231f20;
+      }
+
+      .cls-2, .cls-4 {
+        font-size: 12px;
+      }
+
+      .cls-4, .cls-5 {
+        font-family: HelveticaNeue, 'Helvetica Neue';
+      }
+
+      .cls-5 {
+        font-size: 16px;
+      }
+
+      .cls-6 {
+        letter-spacing: -.11em;
+      }
+    </style>
+  </defs>
+  <rect class="cls-1" x=".5" y=".5" width="841.89" height="107.04"/>
+  <text class="cls-5" transform="translate(91.86 30.6)"><tspan x="0" y="0">Název díla / 2025</tspan></text>
+  <text class="cls-4" transform="translate(727.37 24.43)"><tspan x="0" y="0">oznacnik.github.io</tspan></text>
+  <text class="cls-2" transform="translate(91.86 50.12)"><tspan x="0" y="0">Jméno Autora</tspan></text>
+  <text class="cls-4" transform="translate(91.86 67.97)"><tspan class="cls-6" x="0" y="0">T</tspan><tspan x="5.56" y="0">echnika</tspan></text>
+  <rect class="cls-3" x="18.1" y="18.1" width="51.02" height="51.02"/>
+</svg>

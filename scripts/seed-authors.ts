@@ -57,6 +57,27 @@ const MANUAL_AUTHORS: ManualAuthor[] = [
     works: [{ ord: 1, title: "(bez názvu)" }],
     notes: "CSV bez seznamu děl, jen 10 zast. / 20 kopií",
   },
+  {
+    id: "ptacek",
+    name: "ptacek",
+    web_consent: true,
+    popisek_consent: true,
+    film_consent: true,
+    requested_stops: 10, // 10 zast. × 2 = 20 fyzických popisků (1 dílo × 20)
+    works: [{ ord: 1, title: "Chomp" }],
+  },
+  {
+    id: "tomas-vrana",
+    name: "Tomáš Vrána",
+    web_consent: true,
+    popisek_consent: true,
+    film_consent: true,
+    requested_stops: 6, // 6 zast. × 2 = 12 fyzických popisků (2 díla × 6)
+    works: [
+      { ord: 1, title: "Zlý Aleš" },
+      { ord: 2, title: "Zjevení" },
+    ],
+  },
 ];
 
 // ── Minimalistický CSV parser (umí quoted cells s escaped quotes) ─────

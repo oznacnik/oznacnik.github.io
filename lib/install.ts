@@ -3,6 +3,7 @@ import { supabase } from "./supabase";
 export interface Author {
   id: string;
   name: string;
+  display_name: string | null; // pseudonym pro veřejnost; fallback na name
   email: string | null;
   annotation: string | null;
   web_consent: boolean;
@@ -10,6 +11,28 @@ export interface Author {
   film_consent: boolean;
   notes: string | null;
   requested_stops: number | null;
+  present: boolean; // jestli je fyzicky na vernisáži (pro attendance filter)
+}
+
+// Konzistentní display name napříč UI
+export function displayName(a: Pick<Author, "name" | "display_name">): string {
+  return a.display_name?.trim() || a.name;
+}
+
+// Některá díla jsou jen placeholder (Vavrečka apod.) — bez skutečného názvu.
+// V UI je nezobrazujeme jako „dílo X" ale spadne to na samotného autora.
+export function isPlaceholderTitle(title: string | null | undefined): boolean {
+  if (!title) return true;
+  const t = title.trim().toLowerCase();
+  if (!t) return true;
+  return (
+    t === "(bez názvu)" ||
+    t === "bez názvu" ||
+    t === "bez nazvu" ||
+    t === "(bez nazvu)" ||
+    t === "—" ||
+    t === "-"
+  );
 }
 
 export interface Work {
@@ -26,6 +49,7 @@ export interface Claim {
   author_id: string;
   work_ids: string[];
   notes: string | null;
+  photo_paths: string[];
   claimed_at: string;
   updated_at: string;
 }

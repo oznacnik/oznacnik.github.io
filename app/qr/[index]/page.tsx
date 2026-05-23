@@ -34,6 +34,7 @@ export default async function QrLandingPage({
     }
   }
 
-  // Redirect na vernisáž (později se může změnit na work-specific stránku)
-  redirect("/vystavy/vernisaz");
+  // Redirect na homepage = živá vernisáž (foto feed, mapa, autoři).
+  // Per-work routing se může přidat později jako /qr/[index]?work=...
+  redirect("/");
 }

@@ -46,15 +46,6 @@ export default async function InstallStopPage({
   const authorsWithProgress = buildAuthorsWithProgress(authors, works, claims, labelsUsed);
   const existingClaim = claims.find((c) => c.stop_id === stopId) ?? null;
 
-  // Počet umístění každého díla napříč všemi claimy (NE jen na této zastávce).
-  // Slouží jako vodítko: "tohle dílo už visí na X dalších zastávkách".
-  const workPlacements: Record<string, number> = {};
-  for (const c of claims) {
-    for (const wid of c.work_ids) {
-      workPlacements[wid] = (workPlacements[wid] ?? 0) + 1;
-    }
-  }
-
   // Načti QR labels už spárované s touto zastávkou
   const { data: labelsHere } = await supabase
     .from("oznacnik_qr_labels")
@@ -76,7 +67,6 @@ export default async function InstallStopPage({
       stop={stop}
       authors={authorsWithProgress}
       existingClaim={existingClaim}
-      workPlacements={workPlacements}
       labelsHere={(labelsHere ?? []) as QrLabelHere[]}
       lastAuthorId={lastClaim?.author_id ?? null}
       claimsCountSoFar={claimsCountSoFar}
